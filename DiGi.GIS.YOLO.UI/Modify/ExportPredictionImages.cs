@@ -29,13 +29,7 @@ namespace DiGi.GIS.YOLO.UI
         /// <param name="cancellationToken">A cancellation token to observe while performing the operation.</param>
         /// <returns>A task returning <see langword="true"/> if the export completed successfully; otherwise <see langword="false"/>.</returns>
         [SupportedOSPlatform("windows")]
-        public static async Task<bool> ExportPredictionImagesAsync(
-            this GISWebAPIManager? gisWebAPIManager,
-            int countyId,
-            string? destinationDirectory,
-            int maxConcurrentRequests = 8,
-            bool resume = true,
-            CancellationToken cancellationToken = default)
+        public static async Task<bool> ExportPredictionImagesAsync(this GISWebAPIManager? gisWebAPIManager, int countyId, string? destinationDirectory, int maxConcurrentRequests = 8, bool resume = true, CancellationToken cancellationToken = default)
         {
             if (gisWebAPIManager is null || countyId <= 0 || string.IsNullOrWhiteSpace(destinationDirectory))
             {

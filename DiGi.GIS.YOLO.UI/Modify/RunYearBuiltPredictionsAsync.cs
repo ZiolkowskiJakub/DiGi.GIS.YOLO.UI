@@ -166,7 +166,7 @@ namespace DiGi.GIS.YOLO.UI
 
                 List<int> countyIds_County = countyIds_Siblings.TryGetValue(countyId, out List<int>? countyIds_Temp) && countyIds_Temp is not null && countyIds_Temp.Count != 0 ? countyIds_Temp : [countyId];
 
-                string directory_County = Path.Combine(scratchDirectory, countyId.ToString());
+                string directory_County = Path.Combine(scratchDirectory, countyId.ToString(System.Globalization.CultureInfo.InvariantCulture));
                 string directory_Images = Path.Combine(directory_County, Constants.DirectoryName.PredictionImages);
                 string path_Results = Path.Combine(directory_County, Constants.FileName.PredictionResults);
 
@@ -192,7 +192,9 @@ namespace DiGi.GIS.YOLO.UI
                     List<Building2DYearBuiltPredictions>? building2DYearBuiltPredictions;
                     if (yearBuiltPredictionPipelineOptions.RunPrediction)
                     {
-                        DiGi.YOLO.Classes.YOLOPredictionOptions? yOLOPredictionOptions = DiGi.YOLO.Create.YOLOPredictionOptions(yearBuiltPredictionPipelineOptions.PythonPath, yearBuiltPredictionPipelineOptions.ModelPath, directory_Images, path_Results, yearBuiltPredictionPipelineOptions.WorkingDirectory, yearBuiltPredictionPipelineOptions.Confidence);
+                        string? modelPath_Resolved = Query.ModelPath(yearBuiltPredictionPipelineOptions.ModelPath);
+
+                        DiGi.YOLO.Classes.YOLOPredictionOptions? yOLOPredictionOptions = DiGi.YOLO.Create.YOLOPredictionOptions(yearBuiltPredictionPipelineOptions.PythonPath, modelPath_Resolved, directory_Images, path_Results, yearBuiltPredictionPipelineOptions.WorkingDirectory, yearBuiltPredictionPipelineOptions.Confidence);
                         if (yOLOPredictionOptions is null)
                         {
                             Fail(nameof(DiGi.YOLO.Create.YOLOPredictionOptions), countyId);

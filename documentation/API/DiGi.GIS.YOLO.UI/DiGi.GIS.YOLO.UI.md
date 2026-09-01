@@ -317,6 +317,27 @@ The optional file path to GIS\_WebAPI\_Client\.conf\. If omitted, searches next 
 [System\.String](https://learn.microsoft.com/en-us/dotnet/api/system.string 'System\.String')  
 The API key if found; otherwise, null\.
 
+<a name='DiGi.GIS.YOLO.UI.Query.ModelPath(string)'></a>
+
+## Query\.ModelPath\(string\) Method
+
+Resolves the absolute path to the YOLO model file from the specified path or standard deployment locations\.
+
+```csharp
+public static string? ModelPath(string? modelPath);
+```
+#### Parameters
+
+<a name='DiGi.GIS.YOLO.UI.Query.ModelPath(string).modelPath'></a>
+
+`modelPath` [System\.String](https://learn.microsoft.com/en-us/dotnet/api/system.string 'System\.String')
+
+The configured model path, which may be relative to the application directory or user files directory\.
+
+#### Returns
+[System\.String](https://learn.microsoft.com/en-us/dotnet/api/system.string 'System\.String')  
+The resolved absolute path if the model file exists; otherwise, the normalized path or null\.
+
 <a name='DiGi.GIS.YOLO.UI.Query.SiblingCountyIdsAsync(thisDiGi.GIS.WebAPI.Classes.GISWebAPIManager,System.Collections.Generic.IEnumerable_int_,DiGi.WebAPI.Classes.PostOptions)'></a>
 
 ## Query\.SiblingCountyIdsAsync\(this GISWebAPIManager, IEnumerable\<int\>, PostOptions\) Method

@@ -105,6 +105,12 @@ namespace DiGi.GIS.YOLO.UI.ConsoleApp
                 cancellationTokenSource.Cancel();
             };
 
+            string? modelPath_Resolved = Query.ModelPath(options.ModelPath);
+            if (!string.IsNullOrWhiteSpace(modelPath_Resolved))
+            {
+                options.ModelPath = modelPath_Resolved;
+            }
+
             Console.WriteLine("[INFO] Running YOLO environment preflight check...");
             YOLOEnvironmentResult? yoloEnvironmentResult = DiGi.YOLO.Query.YOLOEnvironmentResult(options.PythonPath, options.ModelPath, options.WorkingDirectory, cancellationTokenSource.Token);
             if (yoloEnvironmentResult is null || !yoloEnvironmentResult.Runnable)
