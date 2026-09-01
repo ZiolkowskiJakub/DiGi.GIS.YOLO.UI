@@ -427,3 +427,7 @@ FodyWeavers.xsd
 *.msix
 *.msm
 *.msp
+
+# Secrets and machine-specific configuration (see AI Guidelines: Coding - General.md)
+[Uu]ser [Ff]iles/
+

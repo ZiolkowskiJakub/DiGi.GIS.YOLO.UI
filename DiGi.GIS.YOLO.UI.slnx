@@ -1,0 +1,11 @@
+<Solution>
+  <Folder Name="/Solution Items/">
+    <File Path=".editorconfig" />
+    <File Path="DefaultDocumentation.json" />
+    <File Path="Directory.Build.props" />
+    <File Path="Directory.Build.targets" />
+  </Folder>
+  <Project Path="DiGi.GIS.YOLO.UI/DiGi.GIS.YOLO.UI.csproj" />
+  <Project Path="DiGi.GIS.YOLO.UI.ConsoleApp/DiGi.GIS.YOLO.UI.ConsoleApp.csproj" />
+  <Project Path="../DiGi.Test/DiGi.GIS.YOLO.UI.xUnit/DiGi.GIS.YOLO.UI.xUnit.csproj" />
+</Solution>

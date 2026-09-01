@@ -1,0 +1,35 @@
+<Project>
+  <!-- API Documentation Generation -->
+  <PropertyGroup Condition="'$(IsTestProject)' != 'true' And '$(MSBuildProjectExtension)' == '.csproj'">
+    <NoWarn>$(NoWarn);1591</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(IsTestProject)' != 'true' And '$(MSBuildProjectExtension)' == '.csproj'">
+    <PackageReference Include="DefaultDocumentation" Version="1.2.5" PrivateAssets="all" />
+  </ItemGroup>
+
+  <PropertyGroup Condition="'$(IsTestProject)' != 'true' And '$(MSBuildProjectExtension)' == '.csproj'">
+    <DefaultDocumentationFolder>$(MSBuildThisFileDirectory)documentation\API\$(AssemblyName)</DefaultDocumentationFolder>
+    <DefaultDocumentationCleanOutputFolder>true</DefaultDocumentationCleanOutputFolder>
+    <DefaultDocumentationGeneratedPages>Namespaces</DefaultDocumentationGeneratedPages>
+    <DefaultDocumentationConfigurationFile>$(MSBuildThisFileDirectory)DefaultDocumentation.json</DefaultDocumentationConfigurationFile>
+    <!-- Without this, multi-namespace assemblies fall back to the generic "index" page name; when a repo has
+         more than one assembly, every assembly's index.md collides in the GitHub wiki's flat page sidebar. -->
+    <DefaultDocumentationAssemblyPageName>$(AssemblyName).Overview</DefaultDocumentationAssemblyPageName>
+  </PropertyGroup>
+
+  <!-- Centralized File Copying Targets for Runtime Assets -->
+  <Target Name="CopyFiles" AfterTargets="Build" Condition="'$(MSBuildProjectExtension)' == '.csproj'">
+    <ItemGroup>
+      <_Files Include="$(MSBuildThisFileDirectory)files\**\*.*" />
+    </ItemGroup>
+    <Copy SourceFiles="@(_Files)" DestinationFiles="@(_Files->'$(OutputPath)%(RecursiveDir)%(Filename)%(Extension)')" SkipUnchangedFiles="true" Condition="Exists('$(MSBuildThisFileDirectory)files')" />
+  </Target>
+
+  <Target Name="CopyUserFiles" AfterTargets="CopyFiles" Condition="'$(MSBuildProjectExtension)' == '.csproj'">
+    <ItemGroup>
+      <_UserFiles Include="$(MSBuildThisFileDirectory)user files\**\*.*" />
+    </ItemGroup>
+    <Copy SourceFiles="@(_UserFiles)" DestinationFiles="@(_UserFiles->'$(OutputPath)%(RecursiveDir)%(Filename)%(Extension)')" SkipUnchangedFiles="true" Condition="Exists('$(MSBuildThisFileDirectory)user files')" />
+  </Target>
+</Project>
