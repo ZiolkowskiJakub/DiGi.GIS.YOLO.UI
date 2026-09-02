@@ -79,6 +79,8 @@ Each step carries its own flag, so a run can be resumed without repeating the ex
 
 Only a building the detector fired on at least once is scored. A building it never fired on carries no per-year confidence series, which is the feature the regressor was built around, so scoring it would be scoring a row of absent features. The consequence is that the run predicts a year for fewer buildings than the file based workflow it replaces, which scored every row of its table - worth knowing before comparing the two reference by reference.
 
+The scope is checked before any of it starts. A county identifier that is in no county row - most often a four character county code passed where an identifier was wanted - matches no stored building, so every step reports a legitimate zero and the run ends green having done nothing at all. That is a mis-scoped run rather than an empty county, so it fails here instead.
+
 A county that fails is logged and stepped over, so one unreachable county cannot cost the run the counties behind it. The result therefore comes back either way - [FailedStepNames](DiGi.GIS.YOLO.UI.Classes.md#DiGi.GIS.YOLO.UI.Classes.YearBuiltPredictionResult.FailedStepNames 'DiGi\.GIS\.YOLO\.UI\.Classes\.YearBuiltPredictionResult\.FailedStepNames') is what says whether the run did everything it set out to do.
 
 ```csharp
