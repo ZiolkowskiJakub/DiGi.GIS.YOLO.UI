@@ -172,6 +172,21 @@ public string? PythonPath { get; set; }
 #### Property Value
 [System\.String](https://learn.microsoft.com/en-us/dotnet/api/system.string 'System\.String')
 
+<a name='DiGi.GIS.YOLO.UI.Classes.YearBuiltPredictionPipelineOptions.Radiuses'></a>
+
+## YearBuiltPredictionPipelineOptions\.Radiuses Property
+
+Gets or sets the radiuses the radial ratio features cover, in metres\.
+
+Carried for the same reason as [Years](DiGi.GIS.YOLO.UI.Classes.md#DiGi.GIS.YOLO.UI.Classes.YearBuiltPredictionPipelineOptions.Years 'DiGi\.GIS\.YOLO\.UI\.Classes\.YearBuiltPredictionPipelineOptions\.Years'): it decides which columns the feature projection asks for, and a projection that disagrees with the range the regressor was trained on hands the model defaults rather than features - which scores without failing. Null means the same default the column list itself applies.
+
+```csharp
+public System.Collections.Generic.List<double>? Radiuses { get; set; }
+```
+
+#### Property Value
+[System\.Collections\.Generic\.List&lt;](https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.list-1 'System\.Collections\.Generic\.List\`1')[System\.Double](https://learn.microsoft.com/en-us/dotnet/api/system.double 'System\.Double')[&gt;](https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.list-1 'System\.Collections\.Generic\.List\`1')
+
 <a name='DiGi.GIS.YOLO.UI.Classes.YearBuiltPredictionPipelineOptions.ReferenceBatchSize'></a>
 
 ## YearBuiltPredictionPipelineOptions\.ReferenceBatchSize Property

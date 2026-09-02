@@ -173,7 +173,7 @@ namespace DiGi.GIS.YOLO.UI
             }
 
             List<string> columnUniqueIds = [];
-            foreach (Column column in DiGi.GIS.IO.Query.YearBuiltPredictionInputColumns(yearBuiltPredictionPipelineOptions.Years))
+            foreach (Column column in DiGi.GIS.IO.Query.YearBuiltPredictionInputColumns(yearBuiltPredictionPipelineOptions.Years, yearBuiltPredictionPipelineOptions.Radiuses))
             {
                 if (column.UniqueId() is string columnUniqueId && !columnUniqueIds.Contains(columnUniqueId))
                 {
