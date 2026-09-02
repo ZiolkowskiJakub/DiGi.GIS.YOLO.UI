@@ -1,7 +1,6 @@
 using DiGi.GIS.YOLO.UI.Classes;
 using System;
 using System.IO;
-using System.Reflection;
 using System.Text.Json.Nodes;
 
 namespace DiGi.GIS.YOLO.UI
@@ -10,35 +9,15 @@ namespace DiGi.GIS.YOLO.UI
     {
         /// <summary>
         /// Reads and deserializes the <see cref="YearBuiltPredictionPipelineOptions"/> from the specified path or default locations.
+        /// <para>A member the file does not name keeps the class default, and a key the class does not declare is dropped in silence - so a misspelt flag reads as an unchanged one. The committed template beside the deployed application is the authority on the spelling.</para>
         /// </summary>
-        /// <param name="path">The optional file path to YearBuiltPredictionPipelineOptions.json. If omitted, searches next to the executing assembly or application base directory.</param>
+        /// <param name="path">The optional file path to YearBuiltPredictionPipelineOptions.json. If omitted, <see cref="ConfigurationFilePath(string)"/> resolves it against the deployed output.</param>
         /// <returns>The deserialized options instance, or null if not found or invalid.</returns>
         public static YearBuiltPredictionPipelineOptions? YearBuiltPredictionPipelineOptions(string? path = null)
         {
             if (string.IsNullOrWhiteSpace(path))
             {
-                string? directory = null;
-                try
-                {
-                    string? location = Assembly.GetExecutingAssembly().Location;
-                    if (!string.IsNullOrWhiteSpace(location))
-                    {
-                        directory = System.IO.Path.GetDirectoryName(location);
-                    }
-                }
-                catch
-                {
-                }
-
-                if (string.IsNullOrWhiteSpace(directory) || !Directory.Exists(directory) || !File.Exists(System.IO.Path.Combine(directory, Constants.FileName.YearBuiltPredictionPipelineOptions)))
-                {
-                    directory = AppDomain.CurrentDomain.BaseDirectory;
-                }
-
-                if (!string.IsNullOrWhiteSpace(directory) && Directory.Exists(directory))
-                {
-                    path = System.IO.Path.Combine(directory, Constants.FileName.YearBuiltPredictionPipelineOptions);
-                }
+                path = ConfigurationFilePath(Constants.FileName.YearBuiltPredictionPipelineOptions);
             }
 
             if (string.IsNullOrWhiteSpace(path) || !File.Exists(path))

@@ -296,6 +296,60 @@ The [System\.Threading\.CancellationToken](https://learn.microsoft.com/en-us/dot
 [System\.Threading\.Tasks\.Task&lt;](https://learn.microsoft.com/en-us/dotnet/api/system.threading.tasks.task-1 'System\.Threading\.Tasks\.Task\`1')[DiGi\.Core\.IO\.Table\.Classes\.Table](https://learn.microsoft.com/en-us/dotnet/api/digi.core.io.table.classes.table 'DiGi\.Core\.IO\.Table\.Classes\.Table')[&gt;](https://learn.microsoft.com/en-us/dotnet/api/system.threading.tasks.task-1 'System\.Threading\.Tasks\.Task\`1')  
 A task returning the projected table, or null when it could not be read\.
 
+<a name='DiGi.GIS.YOLO.UI.Query.ConfigurationFilePath(string)'></a>
+
+## Query\.ConfigurationFilePath\(string\) Method
+
+Resolves where a deployed configuration file of the given name sits\.
+
+Both copy targets flatten into the output root - `CopyUserFiles` runs after `CopyFiles`, so a secret in the git-ignored `user files` folder overwrites the committed default of the same name - which is why only the output root is probed. A `bin\user files` folder is never produced, so looking for one would read as a working fallback while finding nothing.
+
+```csharp
+public static string? ConfigurationFilePath(string? fileName);
+```
+#### Parameters
+
+<a name='DiGi.GIS.YOLO.UI.Query.ConfigurationFilePath(string).fileName'></a>
+
+`fileName` [System\.String](https://learn.microsoft.com/en-us/dotnet/api/system.string 'System\.String')
+
+The name of the configuration file, without a directory\.
+
+#### Returns
+[System\.String](https://learn.microsoft.com/en-us/dotnet/api/system.string 'System\.String')  
+The full path the file would have, whether or not it exists, or null when neither directory can be resolved or no name was given\.
+
+<a name='DiGi.GIS.YOLO.UI.Query.CountyReferencesAsync(thisDiGi.GIS.WebAPI.Classes.GISWebAPIManager,DiGi.WebAPI.Classes.PostOptions)'></a>
+
+## Query\.CountyReferencesAsync\(this GISWebAPIManager, PostOptions\) Method
+
+Reads every stored county row\.
+
+One row per polygon part rather than one per county, so a county whose territory is in several pieces appears several times under one [DiGi\.GIS\.PostgreSQL\.Classes\.AdministrativeAreal2DReference\.Code](https://learn.microsoft.com/en-us/dotnet/api/digi.gis.postgresql.classes.administrativeareal2dreference.code 'DiGi\.GIS\.PostgreSQL\.Classes\.AdministrativeAreal2DReference\.Code'). That is what makes this the answer to both questions the run asks of it: whether a named identifier is a county row at all, and which sibling parts it has.
+
+One request answers both for the whole run, so it is made once and the answer reused.
+
+```csharp
+public static System.Threading.Tasks.Task<System.Collections.Generic.List<DiGi.GIS.PostgreSQL.Classes.AdministrativeAreal2DReference>?> CountyReferencesAsync(this DiGi.GIS.WebAPI.Classes.GISWebAPIManager? gisWebAPIManager, DiGi.WebAPI.Classes.PostOptions? postOptions=null);
+```
+#### Parameters
+
+<a name='DiGi.GIS.YOLO.UI.Query.CountyReferencesAsync(thisDiGi.GIS.WebAPI.Classes.GISWebAPIManager,DiGi.WebAPI.Classes.PostOptions).gisWebAPIManager'></a>
+
+`gisWebAPIManager` [DiGi\.GIS\.WebAPI\.Classes\.GISWebAPIManager](https://learn.microsoft.com/en-us/dotnet/api/digi.gis.webapi.classes.giswebapimanager 'DiGi\.GIS\.WebAPI\.Classes\.GISWebAPIManager')
+
+The [DiGi\.GIS\.WebAPI\.Classes\.GISWebAPIManager](https://learn.microsoft.com/en-us/dotnet/api/digi.gis.webapi.classes.giswebapimanager 'DiGi\.GIS\.WebAPI\.Classes\.GISWebAPIManager') instance used to communicate with the WebAPI\.
+
+<a name='DiGi.GIS.YOLO.UI.Query.CountyReferencesAsync(thisDiGi.GIS.WebAPI.Classes.GISWebAPIManager,DiGi.WebAPI.Classes.PostOptions).postOptions'></a>
+
+`postOptions` [DiGi\.WebAPI\.Classes\.PostOptions](https://learn.microsoft.com/en-us/dotnet/api/digi.webapi.classes.postoptions 'DiGi\.WebAPI\.Classes\.PostOptions')
+
+Optional configuration options for the request\.
+
+#### Returns
+[System\.Threading\.Tasks\.Task&lt;](https://learn.microsoft.com/en-us/dotnet/api/system.threading.tasks.task-1 'System\.Threading\.Tasks\.Task\`1')[System\.Collections\.Generic\.List&lt;](https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.list-1 'System\.Collections\.Generic\.List\`1')[DiGi\.GIS\.PostgreSQL\.Classes\.AdministrativeAreal2DReference](https://learn.microsoft.com/en-us/dotnet/api/digi.gis.postgresql.classes.administrativeareal2dreference 'DiGi\.GIS\.PostgreSQL\.Classes\.AdministrativeAreal2DReference')[&gt;](https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.list-1 'System\.Collections\.Generic\.List\`1')[&gt;](https://learn.microsoft.com/en-us/dotnet/api/system.threading.tasks.task-1 'System\.Threading\.Tasks\.Task\`1')  
+A task returning the county rows, or null when they could not be read\. Null and an empty list mean different things: the first is a failed read, the second a stored estate with no counties in it\.
+
 <a name='DiGi.GIS.YOLO.UI.Query.Key(string)'></a>
 
 ## Query\.Key\(string\) Method
@@ -311,7 +365,7 @@ public static string? Key(string? path=null);
 
 `path` [System\.String](https://learn.microsoft.com/en-us/dotnet/api/system.string 'System\.String')
 
-The optional file path to GIS\_WebAPI\_Client\.conf\. If omitted, searches next to the executing assembly or application base directory\.
+The optional file path to GIS\_WebAPI\_Client\.conf\. If omitted, [ConfigurationFilePath\(string\)](DiGi.GIS.YOLO.UI.md#DiGi.GIS.YOLO.UI.Query.ConfigurationFilePath(string) 'DiGi\.GIS\.YOLO\.UI\.Query\.ConfigurationFilePath\(string\)') resolves it against the deployed output\.
 
 #### Returns
 [System\.String](https://learn.microsoft.com/en-us/dotnet/api/system.string 'System\.String')  
@@ -338,42 +392,67 @@ The configured model path, which may be relative to the application directory or
 [System\.String](https://learn.microsoft.com/en-us/dotnet/api/system.string 'System\.String')  
 The resolved absolute path if the model file exists; otherwise, the normalized path or null\.
 
-<a name='DiGi.GIS.YOLO.UI.Query.SiblingCountyIdsAsync(thisDiGi.GIS.WebAPI.Classes.GISWebAPIManager,System.Collections.Generic.IEnumerable_int_,DiGi.WebAPI.Classes.PostOptions)'></a>
+<a name='DiGi.GIS.YOLO.UI.Query.SiblingCountyIds(System.Collections.Generic.IEnumerable_DiGi.GIS.PostgreSQL.Classes.AdministrativeAreal2DReference_,System.Collections.Generic.IEnumerable_int_)'></a>
 
-## Query\.SiblingCountyIdsAsync\(this GISWebAPIManager, IEnumerable\<int\>, PostOptions\) Method
+## Query\.SiblingCountyIds\(IEnumerable\<AdministrativeAreal2DReference\>, IEnumerable\<int\>\) Method
 
 Resolves, for each county row named, every polygon part of the county that row belongs to\.
 
 A county whose territory is in several pieces is held as one row per piece, so a county identifier names a part rather than a county. The write endpoints file each item under the part its reference belongs to, and can only do that when they are told which parts are in play - naming one part of a multi-part county files the whole batch there whether or not the buildings belong to it.
 
-One request answers this for the whole run, so it is made once and the answer reused. A county the list does not cover is left out rather than guessed at, and the caller then has nothing better to do than write it as a single part.
+A county row the list does not cover is left out rather than guessed at. Ask [UnknownCountyIds\(IEnumerable&lt;AdministrativeAreal2DReference&gt;, IEnumerable&lt;int&gt;\)](DiGi.GIS.YOLO.UI.md#DiGi.GIS.YOLO.UI.Query.UnknownCountyIds(System.Collections.Generic.IEnumerable_DiGi.GIS.PostgreSQL.Classes.AdministrativeAreal2DReference_,System.Collections.Generic.IEnumerable_int_) 'DiGi\.GIS\.YOLO\.UI\.Query\.UnknownCountyIds\(System\.Collections\.Generic\.IEnumerable\<DiGi\.GIS\.PostgreSQL\.Classes\.AdministrativeAreal2DReference\>, System\.Collections\.Generic\.IEnumerable\<int\>\)') about those before running anything: an identifier that is in no county row is a mis-scoped run, not a county with one part.
 
 ```csharp
-public static System.Threading.Tasks.Task<System.Collections.Generic.Dictionary<int,System.Collections.Generic.List<int>>> SiblingCountyIdsAsync(this DiGi.GIS.WebAPI.Classes.GISWebAPIManager? gisWebAPIManager, System.Collections.Generic.IEnumerable<int>? countyIds, DiGi.WebAPI.Classes.PostOptions? postOptions=null);
+public static System.Collections.Generic.Dictionary<int,System.Collections.Generic.List<int>> SiblingCountyIds(System.Collections.Generic.IEnumerable<DiGi.GIS.PostgreSQL.Classes.AdministrativeAreal2DReference>? administrativeAreal2DReferences, System.Collections.Generic.IEnumerable<int>? countyIds);
 ```
 #### Parameters
 
-<a name='DiGi.GIS.YOLO.UI.Query.SiblingCountyIdsAsync(thisDiGi.GIS.WebAPI.Classes.GISWebAPIManager,System.Collections.Generic.IEnumerable_int_,DiGi.WebAPI.Classes.PostOptions).gisWebAPIManager'></a>
+<a name='DiGi.GIS.YOLO.UI.Query.SiblingCountyIds(System.Collections.Generic.IEnumerable_DiGi.GIS.PostgreSQL.Classes.AdministrativeAreal2DReference_,System.Collections.Generic.IEnumerable_int_).administrativeAreal2DReferences'></a>
 
-`gisWebAPIManager` [DiGi\.GIS\.WebAPI\.Classes\.GISWebAPIManager](https://learn.microsoft.com/en-us/dotnet/api/digi.gis.webapi.classes.giswebapimanager 'DiGi\.GIS\.WebAPI\.Classes\.GISWebAPIManager')
+`administrativeAreal2DReferences` [System\.Collections\.Generic\.IEnumerable&lt;](https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.ienumerable-1 'System\.Collections\.Generic\.IEnumerable\`1')[DiGi\.GIS\.PostgreSQL\.Classes\.AdministrativeAreal2DReference](https://learn.microsoft.com/en-us/dotnet/api/digi.gis.postgresql.classes.administrativeareal2dreference 'DiGi\.GIS\.PostgreSQL\.Classes\.AdministrativeAreal2DReference')[&gt;](https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.ienumerable-1 'System\.Collections\.Generic\.IEnumerable\`1')
 
-The [DiGi\.GIS\.WebAPI\.Classes\.GISWebAPIManager](https://learn.microsoft.com/en-us/dotnet/api/digi.gis.webapi.classes.giswebapimanager 'DiGi\.GIS\.WebAPI\.Classes\.GISWebAPIManager') instance used to communicate with the WebAPI\.
+The stored county rows, as read by [CountyReferencesAsync\(this GISWebAPIManager, PostOptions\)](DiGi.GIS.YOLO.UI.md#DiGi.GIS.YOLO.UI.Query.CountyReferencesAsync(thisDiGi.GIS.WebAPI.Classes.GISWebAPIManager,DiGi.WebAPI.Classes.PostOptions) 'DiGi\.GIS\.YOLO\.UI\.Query\.CountyReferencesAsync\(this DiGi\.GIS\.WebAPI\.Classes\.GISWebAPIManager, DiGi\.WebAPI\.Classes\.PostOptions\)')\.
 
-<a name='DiGi.GIS.YOLO.UI.Query.SiblingCountyIdsAsync(thisDiGi.GIS.WebAPI.Classes.GISWebAPIManager,System.Collections.Generic.IEnumerable_int_,DiGi.WebAPI.Classes.PostOptions).countyIds'></a>
+<a name='DiGi.GIS.YOLO.UI.Query.SiblingCountyIds(System.Collections.Generic.IEnumerable_DiGi.GIS.PostgreSQL.Classes.AdministrativeAreal2DReference_,System.Collections.Generic.IEnumerable_int_).countyIds'></a>
 
 `countyIds` [System\.Collections\.Generic\.IEnumerable&lt;](https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.ienumerable-1 'System\.Collections\.Generic\.IEnumerable\`1')[System\.Int32](https://learn.microsoft.com/en-us/dotnet/api/system.int32 'System\.Int32')[&gt;](https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.ienumerable-1 'System\.Collections\.Generic\.IEnumerable\`1')
 
 The county rows to resolve\.
 
-<a name='DiGi.GIS.YOLO.UI.Query.SiblingCountyIdsAsync(thisDiGi.GIS.WebAPI.Classes.GISWebAPIManager,System.Collections.Generic.IEnumerable_int_,DiGi.WebAPI.Classes.PostOptions).postOptions'></a>
+#### Returns
+[System\.Collections\.Generic\.Dictionary&lt;](https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.dictionary-2 'System\.Collections\.Generic\.Dictionary\`2')[System\.Int32](https://learn.microsoft.com/en-us/dotnet/api/system.int32 'System\.Int32')[,](https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.dictionary-2 'System\.Collections\.Generic\.Dictionary\`2')[System\.Collections\.Generic\.List&lt;](https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.list-1 'System\.Collections\.Generic\.List\`1')[System\.Int32](https://learn.microsoft.com/en-us/dotnet/api/system.int32 'System\.Int32')[&gt;](https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.list-1 'System\.Collections\.Generic\.List\`1')[&gt;](https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.dictionary-2 'System\.Collections\.Generic\.Dictionary\`2')  
+Each named county row mapped to the polygon parts of its county, ordered ascending\.
 
-`postOptions` [DiGi\.WebAPI\.Classes\.PostOptions](https://learn.microsoft.com/en-us/dotnet/api/digi.webapi.classes.postoptions 'DiGi\.WebAPI\.Classes\.PostOptions')
+<a name='DiGi.GIS.YOLO.UI.Query.UnknownCountyIds(System.Collections.Generic.IEnumerable_DiGi.GIS.PostgreSQL.Classes.AdministrativeAreal2DReference_,System.Collections.Generic.IEnumerable_int_)'></a>
 
-Optional configuration options for the request\.
+## Query\.UnknownCountyIds\(IEnumerable\<AdministrativeAreal2DReference\>, IEnumerable\<int\>\) Method
+
+Picks out the named county identifiers that are not county rows, and works out whether each was meant as a county code\.
+
+A county is addressed by [DiGi\.GIS\.PostgreSQL\.Classes\.AdministrativeAreal2DReference\.Id](https://learn.microsoft.com/en-us/dotnet/api/digi.gis.postgresql.classes.administrativeareal2dreference.id 'DiGi\.GIS\.PostgreSQL\.Classes\.AdministrativeAreal2DReference\.Id'), which is a database identifier running into six figures. [DiGi\.GIS\.PostgreSQL\.Classes\.AdministrativeAreal2DReference\.Code](https://learn.microsoft.com/en-us/dotnet/api/digi.gis.postgresql.classes.administrativeareal2dreference.code 'DiGi\.GIS\.PostgreSQL\.Classes\.AdministrativeAreal2DReference\.Code') is the four character territorial code, and the two are easy to confuse because a code reads as a number: asking for county 2212 asks for an identifier that does not exist, while the code 2212 is a real county held as two polygon parts under quite different identifiers.
+
+Nothing downstream can tell the difference on its own. An identifier in no county row simply matches no stored building, so the run exports no imagery, detects nothing, scores nothing and reports every one of those as a legitimate zero. That is why the scope is checked here, before any of it starts.
+
+```csharp
+public static System.Collections.Generic.Dictionary<int,System.Collections.Generic.List<int>> UnknownCountyIds(System.Collections.Generic.IEnumerable<DiGi.GIS.PostgreSQL.Classes.AdministrativeAreal2DReference>? administrativeAreal2DReferences, System.Collections.Generic.IEnumerable<int>? countyIds);
+```
+#### Parameters
+
+<a name='DiGi.GIS.YOLO.UI.Query.UnknownCountyIds(System.Collections.Generic.IEnumerable_DiGi.GIS.PostgreSQL.Classes.AdministrativeAreal2DReference_,System.Collections.Generic.IEnumerable_int_).administrativeAreal2DReferences'></a>
+
+`administrativeAreal2DReferences` [System\.Collections\.Generic\.IEnumerable&lt;](https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.ienumerable-1 'System\.Collections\.Generic\.IEnumerable\`1')[DiGi\.GIS\.PostgreSQL\.Classes\.AdministrativeAreal2DReference](https://learn.microsoft.com/en-us/dotnet/api/digi.gis.postgresql.classes.administrativeareal2dreference 'DiGi\.GIS\.PostgreSQL\.Classes\.AdministrativeAreal2DReference')[&gt;](https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.ienumerable-1 'System\.Collections\.Generic\.IEnumerable\`1')
+
+The stored county rows, as read by [CountyReferencesAsync\(this GISWebAPIManager, PostOptions\)](DiGi.GIS.YOLO.UI.md#DiGi.GIS.YOLO.UI.Query.CountyReferencesAsync(thisDiGi.GIS.WebAPI.Classes.GISWebAPIManager,DiGi.WebAPI.Classes.PostOptions) 'DiGi\.GIS\.YOLO\.UI\.Query\.CountyReferencesAsync\(this DiGi\.GIS\.WebAPI\.Classes\.GISWebAPIManager, DiGi\.WebAPI\.Classes\.PostOptions\)')\.
+
+<a name='DiGi.GIS.YOLO.UI.Query.UnknownCountyIds(System.Collections.Generic.IEnumerable_DiGi.GIS.PostgreSQL.Classes.AdministrativeAreal2DReference_,System.Collections.Generic.IEnumerable_int_).countyIds'></a>
+
+`countyIds` [System\.Collections\.Generic\.IEnumerable&lt;](https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.ienumerable-1 'System\.Collections\.Generic\.IEnumerable\`1')[System\.Int32](https://learn.microsoft.com/en-us/dotnet/api/system.int32 'System\.Int32')[&gt;](https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.ienumerable-1 'System\.Collections\.Generic\.IEnumerable\`1')
+
+The county identifiers the run was scoped to\.
 
 #### Returns
-[System\.Threading\.Tasks\.Task&lt;](https://learn.microsoft.com/en-us/dotnet/api/system.threading.tasks.task-1 'System\.Threading\.Tasks\.Task\`1')[System\.Collections\.Generic\.Dictionary&lt;](https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.dictionary-2 'System\.Collections\.Generic\.Dictionary\`2')[System\.Int32](https://learn.microsoft.com/en-us/dotnet/api/system.int32 'System\.Int32')[,](https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.dictionary-2 'System\.Collections\.Generic\.Dictionary\`2')[System\.Collections\.Generic\.List&lt;](https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.list-1 'System\.Collections\.Generic\.List\`1')[System\.Int32](https://learn.microsoft.com/en-us/dotnet/api/system.int32 'System\.Int32')[&gt;](https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.list-1 'System\.Collections\.Generic\.List\`1')[&gt;](https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.dictionary-2 'System\.Collections\.Generic\.Dictionary\`2')[&gt;](https://learn.microsoft.com/en-us/dotnet/api/system.threading.tasks.task-1 'System\.Threading\.Tasks\.Task\`1')  
-A task returning each named county row mapped to the polygon parts of its county, ordered ascending\. Empty when the county rows could not be read at all\.
+[System\.Collections\.Generic\.Dictionary&lt;](https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.dictionary-2 'System\.Collections\.Generic\.Dictionary\`2')[System\.Int32](https://learn.microsoft.com/en-us/dotnet/api/system.int32 'System\.Int32')[,](https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.dictionary-2 'System\.Collections\.Generic\.Dictionary\`2')[System\.Collections\.Generic\.List&lt;](https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.list-1 'System\.Collections\.Generic\.List\`1')[System\.Int32](https://learn.microsoft.com/en-us/dotnet/api/system.int32 'System\.Int32')[&gt;](https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.list-1 'System\.Collections\.Generic\.List\`1')[&gt;](https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.dictionary-2 'System\.Collections\.Generic\.Dictionary\`2')  
+Each named identifier that is not a county row, mapped to the identifiers of the county whose code it spells, ordered ascending\. The mapped list is empty when the value is not a county code either, and the whole dictionary is empty when every named identifier is a county row\.
 
 <a name='DiGi.GIS.YOLO.UI.Query.YearBuiltDatasAsync(thisDiGi.GIS.WebAPI.Classes.GISWebAPIManager,int,System.Collections.Generic.IDictionary_string,short_,System.DateTimeOffset,bool,int,DiGi.WebAPI.Classes.PostOptions,System.Threading.CancellationToken)'></a>
 
@@ -452,6 +531,8 @@ A task returning the year built data to store, each carrying its building's hist
 
 Reads and deserializes the [YearBuiltPredictionPipelineOptions\(string\)](DiGi.GIS.YOLO.UI.md#DiGi.GIS.YOLO.UI.Query.YearBuiltPredictionPipelineOptions(string) 'DiGi\.GIS\.YOLO\.UI\.Query\.YearBuiltPredictionPipelineOptions\(string\)') from the specified path or default locations\.
 
+A member the file does not name keeps the class default, and a key the class does not declare is dropped in silence - so a misspelt flag reads as an unchanged one. The committed template beside the deployed application is the authority on the spelling.
+
 ```csharp
 public static DiGi.GIS.YOLO.UI.Classes.YearBuiltPredictionPipelineOptions? YearBuiltPredictionPipelineOptions(string? path=null);
 ```
@@ -461,7 +542,7 @@ public static DiGi.GIS.YOLO.UI.Classes.YearBuiltPredictionPipelineOptions? YearB
 
 `path` [System\.String](https://learn.microsoft.com/en-us/dotnet/api/system.string 'System\.String')
 
-The optional file path to YearBuiltPredictionPipelineOptions\.json\. If omitted, searches next to the executing assembly or application base directory\.
+The optional file path to YearBuiltPredictionPipelineOptions\.json\. If omitted, [ConfigurationFilePath\(string\)](DiGi.GIS.YOLO.UI.md#DiGi.GIS.YOLO.UI.Query.ConfigurationFilePath(string) 'DiGi\.GIS\.YOLO\.UI\.Query\.ConfigurationFilePath\(string\)') resolves it against the deployed output\.
 
 #### Returns
 [YearBuiltPredictionPipelineOptions](DiGi.GIS.YOLO.UI.Classes.md#DiGi.GIS.YOLO.UI.Classes.YearBuiltPredictionPipelineOptions 'DiGi\.GIS\.YOLO\.UI\.Classes\.YearBuiltPredictionPipelineOptions')  

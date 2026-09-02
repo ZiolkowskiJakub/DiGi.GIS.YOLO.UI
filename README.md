@@ -2,6 +2,54 @@
 
 DiGi.GIS.YOLO.UI provides the headless prediction runner and WebAPI-backed pipeline orchestrator for Year Built prediction using YOLO and ML.NET.
 
+## The Year Built prediction pipeline
+
+Part of the master plan in [DiGi.YOLO#1](https://github.com/ZiolkowskiJakub/DiGi.YOLO/issues/1). One unattended run, sourced entirely from `api.digiproject.uk`:
+
+```
+building_2d + orto_datas -> YOLO detections -> building_data
+                         -> ML feature table -> predicted year
+                         -> year_built_data + building_data."Predicted year built"
+```
+
+`Modify.RunYearBuiltPredictionsAsync` is the orchestrator; `DiGi.GIS.YOLO.UI.ConsoleApp` is the headless run surface. `DiGi.GIS.PostgreSQL.UI` will host the same orchestrator as a tray task.
+
+### Why the pipeline lives here
+
+The orchestrator was first built in `DiGi.GIS.PostgreSQL.UI` and moved here on 2026-09-02.
+
+- **Not in `DiGi.GIS.PostgreSQL.UI`**, because a console runner referencing it inherits `UseWPF`, `UseWindowsForms` and the ASP.NET shared framework for a process that draws nothing.
+- **Not in `DiGi.GIS.YOLO`**, which is kept dependency-light for callers that only want the detection translation; the orchestrator needs `DiGi.GIS.WebAPI`, `DiGi.GIS.PostgreSQL` and `System.Drawing`.
+- **`.UI` here means "run surface", not WPF.** Everywhere else in the workspace the suffix means a desktop application; this repository holds a library and a console executable, and no window.
+
+### Why `net10.0-windows7.0`
+
+`Modify.ExportPredictionImagesAsync` decodes and re-encodes the stored orthophoto bytes through `System.Drawing.Image`, which is Windows-only from .NET 7 onward. That fixes the target framework, and `NoWarn;CA1416` plus `[SupportedOSPlatform("windows")]` follow from it. The runner cannot be hosted on Linux until that re-encode moves off `System.Drawing` — and it cannot simply be replaced, because the detector's weights are frozen and the export has to stay byte-identical to the one they were trained against.
+
+### Configuration
+
+Two files, both resolved by `Query.ConfigurationFilePath` against the application output. `CopyUserFiles` runs after `CopyFiles`, so anything in the git-ignored `user files` folder overwrites the committed default of the same name.
+
+| File | Committed | Purpose |
+|---|---|---|
+| `files/GIS_WebAPI_Client.conf` | yes, with `Key=""` | The deny-by-default placeholder. The real key goes in `user files/GIS_WebAPI_Client.conf` and is never committed. |
+| `files/YearBuiltPredictionPipelineOptions.json.template` | yes | The option set, with every write step off and no county named. Copy it to `user files/YearBuiltPredictionPipelineOptions.json` and edit that. |
+
+**`CountyIds` are county row identifiers, never county codes.** A code is the four character territorial value (`"2212"`); an identifier is a database row running into six figures, and a county whose territory is in several pieces has **one identifier per piece** — name every one of them, so each written row is filed under the part its reference belongs to. Code `2212` (słupski) is identifiers `73482` and `73485`. Getting this wrong used to produce a green run that exported nothing, detected nothing and scored nothing; `Query.UnknownCountyIds` now stops the run and says which identifiers were meant.
+
+Every write step is off in the template on purpose: the pipeline writes deployed data, so a first pass over a county is a read-only one.
+
+### Exit codes
+
+| Code | Meaning |
+|---|---|
+| 0 | The run completed and no step reported a failure. |
+| 1 | The options file could not be read, or names no county or no scratch directory. |
+| 2 | The environment preflight failed — this machine cannot run the detector. |
+| 3 | No Web API authorization key was found. |
+| 4 | A step failed while running. |
+| 5 | The run was cancelled. |
+
 ## 💻 Coding Guidelines for Developers & AI Agents
 
 To maintain codebase health, performance, and compatibility within Visual Studio 2026 / C# 10+ environments, all developers and AI agents must strictly comply with these guidelines.

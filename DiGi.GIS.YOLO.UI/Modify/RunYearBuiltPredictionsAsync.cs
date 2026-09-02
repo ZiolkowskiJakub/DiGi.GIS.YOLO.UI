@@ -24,6 +24,7 @@ namespace DiGi.GIS.YOLO.UI
         /// <para>Six steps per county: export the imagery, score it with the frozen detector, turn the detections into objects, write them into the building data, read the feature columns back and score them into a construction year, and store that year twice - dated into the year built data, and latest into the building data column.</para>
         /// <para>Each step carries its own flag, so a run can be resumed without repeating the expensive ones, and a first pass over a county can be made harmless by turning the three write steps off. Each step is idempotent: the scratch paths are derived from the county identifier, the detector overwrites its results file rather than appending to it, and a stored year built datum is read back and added to rather than replaced.</para>
         /// <para>Only a building the detector fired on at least once is scored. A building it never fired on carries no per-year confidence series, which is the feature the regressor was built around, so scoring it would be scoring a row of absent features. The consequence is that the run predicts a year for fewer buildings than the file based workflow it replaces, which scored every row of its table - worth knowing before comparing the two reference by reference.</para>
+        /// <para>The scope is checked before any of it starts. A county identifier that is in no county row - most often a four character county code passed where an identifier was wanted - matches no stored building, so every step reports a legitimate zero and the run ends green having done nothing at all. That is a mis-scoped run rather than an empty county, so it fails here instead.</para>
         /// <para>A county that fails is logged and stepped over, so one unreachable county cannot cost the run the counties behind it. The result therefore comes back either way - <see cref="YearBuiltPredictionResult.FailedStepNames"/> is what says whether the run did everything it set out to do.</para>
         /// </summary>
         /// <param name="gisWebAPIManager">The <see cref="GISWebAPIManager"/> instance used to communicate with the WebAPI. It also carries the key the write steps authorize with.</param>
@@ -133,10 +134,42 @@ namespace DiGi.GIS.YOLO.UI
                 }
             }
 
-            Dictionary<int, List<int>> countyIds_Siblings = await Query.SiblingCountyIdsAsync(gisWebAPIManager, countyIds, postOptions_Item);
-            if (countyIds_Siblings.Count == 0)
+            // Fully qualified: DiGi.GIS.Classes and DiGi.GIS.PostgreSQL.Classes both declare a YearBuiltData, so
+            // importing the second namespace here would make the stored one ambiguous further down.
+            List<PostgreSQL.Classes.AdministrativeAreal2DReference>? administrativeAreal2DReferences = await Query.CountyReferencesAsync(gisWebAPIManager, postOptions_Item);
+
+            Dictionary<int, List<int>> countyIds_Siblings;
+            if (administrativeAreal2DReferences is null)
             {
-                messages.Add("The county rows could not be read, so each county was written as though it were a single polygon part.");
+                countyIds_Siblings = [];
+                messages.Add("The county rows could not be read, so the scope could not be checked and each county was written as though it were a single polygon part.");
+                Serilog.Modify.Log(Serilog.Enums.LogEventLevel.Warning, "{Method}: the county rows could not be read - the scope was not checked", nameof(RunYearBuiltPredictionsAsync));
+            }
+            else
+            {
+                // A county identifier that is in no county row matches no stored building, so every step downstream
+                // reports a legitimate zero and the run ends green having done nothing. Since this one writes
+                // deployed data, a scope that cannot be resolved stops the run here rather than being discovered
+                // from a tally of zeroes afterwards.
+                Dictionary<int, List<int>> countyIds_Unknown = Query.UnknownCountyIds(administrativeAreal2DReferences, countyIds);
+                if (countyIds_Unknown.Count != 0)
+                {
+                    foreach (KeyValuePair<int, List<int>> keyValuePair in countyIds_Unknown)
+                    {
+                        string message = keyValuePair.Value.Count == 0
+                            ? string.Format(System.Globalization.CultureInfo.InvariantCulture, "County {0} is not a county row. A county is named by its identifier, never by its four character code.", keyValuePair.Key)
+                            : string.Format(System.Globalization.CultureInfo.InvariantCulture, "County {0} is not a county row - it is the code of a county held as {1} polygon part(s), whose identifiers are {2}. A county is named by its identifier, never by its code.", keyValuePair.Key, keyValuePair.Value.Count, string.Join(", ", keyValuePair.Value));
+
+                        messages.Add(message);
+                        Serilog.Modify.Log(Serilog.Enums.LogEventLevel.Error, "{Method}: {Message}", nameof(RunYearBuiltPredictionsAsync), message);
+                    }
+
+                    failedStepNames.Add(nameof(Query.UnknownCountyIds));
+
+                    return Result();
+                }
+
+                countyIds_Siblings = Query.SiblingCountyIds(administrativeAreal2DReferences, countyIds);
             }
 
             List<string> columnUniqueIds = [];

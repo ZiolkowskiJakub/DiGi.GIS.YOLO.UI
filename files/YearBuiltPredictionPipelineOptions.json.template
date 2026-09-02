@@ -1,19 +1,19 @@
 {
-  "CountyIds": [
-    0
-  ],
+  "CountyIds": [],
   "ScratchDirectory": "scratch",
   "ModelPath": "user files/YOLO/models/model.pt",
   "PythonPath": null,
   "WorkingDirectory": null,
+  "Confidence": 0.1,
+  "Years": null,
   "MaxConcurrentRequests": 8,
   "BatchSize": 5000,
+  "ReferenceBatchSize": 10000,
   "Resume": true,
-  "ScoreOnlyExisting": false,
   "ExportImages": true,
   "RunPrediction": true,
-  "UpdateDetections": true,
   "Score": true,
-  "UpdateBuildingData": true,
-  "UpdateYearBuiltData": true
+  "UpdateDetections": false,
+  "UpdateYearBuiltData": false,
+  "UpdatePredictedYearBuilt": false
 }

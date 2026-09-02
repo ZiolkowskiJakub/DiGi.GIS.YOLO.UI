@@ -77,7 +77,10 @@ namespace DiGi.GIS.YOLO.UI
 
             if (ortoDatasReferences.Count == 0)
             {
-                Serilog.Modify.Log("No OrtoDatasReferences found for county {CountyId}", countyId);
+                // Not a failure - a county genuinely may hold no imagery yet - but it is the shape a mis-scoped run
+                // takes as well, and everything downstream of here then reports a legitimate zero. Warning rather
+                // than Information so an unattended run leaves a trace of why it scored nothing.
+                Serilog.Modify.Log(Serilog.Enums.LogEventLevel.Warning, "No OrtoDatasReferences found for county {CountyId} - nothing will be exported, detected or scored for it", countyId);
                 return true;
             }
 
