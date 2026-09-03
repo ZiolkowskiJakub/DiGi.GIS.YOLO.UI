@@ -31,6 +31,21 @@ public const int BuildingDataReference_Maximum = 10000;
 #### Field Value
 [System\.Int32](https://learn.microsoft.com/en-us/dotnet/api/system.int32 'System\.Int32')
 
+<a name='DiGi.GIS.YOLO.UI.Constants.Count.YearBuiltDataReference_Maximum'></a>
+
+## Count\.YearBuiltDataReference\_Maximum Field
+
+Gets the largest number of references the year built data endpoint accepts in one request\.
+
+Mirrors the cap the endpoint enforces. A county is thirty to a hundred and fifty thousand buildings, so the read is always paged; asking for more than this fails the whole request rather than merely being slower.
+
+```csharp
+public const int YearBuiltDataReference_Maximum = 10000;
+```
+
+#### Field Value
+[System\.Int32](https://learn.microsoft.com/en-us/dotnet/api/system.int32 'System\.Int32')
+
 <a name='DiGi.GIS.YOLO.UI.Constants.DirectoryName'></a>
 
 ## DirectoryName Class

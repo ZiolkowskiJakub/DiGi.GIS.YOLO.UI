@@ -527,10 +527,10 @@ A building with nothing stored yet gets a new datum, which is the one case where
 
 Every prediction of one run carries the same stamp. The stored entries are keyed by it, so one stamp per run leaves one history entry per run, and re-running with the same stamp replaces that entry rather than adding to it.
 
-There is no bulk read for this table - the endpoint answers one reference at a time - so the reads are issued in bounded batches rather than all at once.
+The read is bulk: the endpoint answers up to [YearBuiltDataReference\_Maximum](DiGi.GIS.YOLO.UI.Constants.md#DiGi.GIS.YOLO.UI.Constants.Count.YearBuiltDataReference_Maximum 'DiGi\.GIS\.YOLO\.UI\.Constants\.Count\.YearBuiltDataReference\_Maximum') references in one request, so the references are paged at that size and a page is the unit that succeeds or fails. A page that cannot be read is skipped rather than answered with a fresh datum for every building of it, because that would store a second row alongside the one that could not be read.
 
 ```csharp
-public static System.Threading.Tasks.Task<System.Collections.Generic.List<DiGi.GIS.Classes.YearBuiltData>> YearBuiltDatasAsync(this DiGi.GIS.WebAPI.Classes.GISWebAPIManager? gisWebAPIManager, int countyId, System.Collections.Generic.IDictionary<string,short>? years, System.DateTimeOffset runTimestamp, bool readStored=true, int maxConcurrentRequests=8, DiGi.WebAPI.Classes.PostOptions? postOptions=null, System.Threading.CancellationToken cancellationToken=default(System.Threading.CancellationToken));
+public static System.Threading.Tasks.Task<System.Collections.Generic.List<DiGi.GIS.Classes.YearBuiltData>> YearBuiltDatasAsync(this DiGi.GIS.WebAPI.Classes.GISWebAPIManager? gisWebAPIManager, int countyId, System.Collections.Generic.IDictionary<string,short>? years, System.DateTimeOffset runTimestamp, bool readStored=true, int referenceBatchSize=10000, DiGi.WebAPI.Classes.PostOptions? postOptions=null, System.Threading.CancellationToken cancellationToken=default(System.Threading.CancellationToken));
 ```
 #### Parameters
 
@@ -562,13 +562,13 @@ The stamp every prediction of this run carries\.
 
 `readStored` [System\.Boolean](https://learn.microsoft.com/en-us/dotnet/api/system.boolean 'System\.Boolean')
 
-When true, each building's stored entry is read back first so the prediction is added to its history\. Set it false only when the caller is not storing the year built data at all \- a county is tens of thousands of buildings and this is a request each, while the building data column is derived from the latest prediction, which a fresh entry already carries\.
+When true, each building's stored entry is read back first so the prediction is added to its history\. Set it false only when the caller is not storing the year built data at all \- a county is tens of thousands of buildings, and the building data column is derived from the latest prediction, which a fresh entry already carries\.
 
-<a name='DiGi.GIS.YOLO.UI.Query.YearBuiltDatasAsync(thisDiGi.GIS.WebAPI.Classes.GISWebAPIManager,int,System.Collections.Generic.IDictionary_string,short_,System.DateTimeOffset,bool,int,DiGi.WebAPI.Classes.PostOptions,System.Threading.CancellationToken).maxConcurrentRequests'></a>
+<a name='DiGi.GIS.YOLO.UI.Query.YearBuiltDatasAsync(thisDiGi.GIS.WebAPI.Classes.GISWebAPIManager,int,System.Collections.Generic.IDictionary_string,short_,System.DateTimeOffset,bool,int,DiGi.WebAPI.Classes.PostOptions,System.Threading.CancellationToken).referenceBatchSize'></a>
 
-`maxConcurrentRequests` [System\.Int32](https://learn.microsoft.com/en-us/dotnet/api/system.int32 'System\.Int32')
+`referenceBatchSize` [System\.Int32](https://learn.microsoft.com/en-us/dotnet/api/system.int32 'System\.Int32')
 
-The maximum number of concurrent WebAPI requests allowed while reading\. Defaults to 8\.
+The number of references read in one request, at most [YearBuiltDataReference\_Maximum](DiGi.GIS.YOLO.UI.Constants.md#DiGi.GIS.YOLO.UI.Constants.Count.YearBuiltDataReference_Maximum 'DiGi\.GIS\.YOLO\.UI\.Constants\.Count\.YearBuiltDataReference\_Maximum') \- the endpoint's cap\.
 
 <a name='DiGi.GIS.YOLO.UI.Query.YearBuiltDatasAsync(thisDiGi.GIS.WebAPI.Classes.GISWebAPIManager,int,System.Collections.Generic.IDictionary_string,short_,System.DateTimeOffset,bool,int,DiGi.WebAPI.Classes.PostOptions,System.Threading.CancellationToken).postOptions'></a>
 

@@ -110,8 +110,8 @@ namespace DiGi.GIS.YOLO.UI.Classes
         public string? PythonPath { get; set; } = null;
 
         /// <summary>
-        /// Gets or sets how many references the feature table is asked for in one request.
-        /// <para>The endpoint refuses more than ten thousand references at a time and a county is thirty to a hundred and fifty thousand buildings, so the read is paged. A larger value is clamped down to the cap while the run works.</para>
+        /// Gets or sets how many references a bulk read is asked for in one request.
+        /// <para>The feature table and the year built data share the cap - each endpoint refuses more than ten thousand references at a time - and a county is thirty to a hundred and fifty thousand buildings, so both reads are paged. A larger value is clamped down to the cap while the run works.</para>
         /// </summary>
         [JsonInclude, JsonPropertyName(nameof(ReferenceBatchSize))]
         public int ReferenceBatchSize { get; set; } = 10000;

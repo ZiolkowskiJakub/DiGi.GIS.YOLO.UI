@@ -191,9 +191,9 @@ public System.Collections.Generic.List<double>? Radiuses { get; set; }
 
 ## YearBuiltPredictionPipelineOptions\.ReferenceBatchSize Property
 
-Gets or sets how many references the feature table is asked for in one request\.
+Gets or sets how many references a bulk read is asked for in one request\.
 
-The endpoint refuses more than ten thousand references at a time and a county is thirty to a hundred and fifty thousand buildings, so the read is paged. A larger value is clamped down to the cap while the run works.
+The feature table and the year built data share the cap - each endpoint refuses more than ten thousand references at a time - and a county is thirty to a hundred and fifty thousand buildings, so both reads are paged. A larger value is clamped down to the cap while the run works.
 
 ```csharp
 public int ReferenceBatchSize { get; set; }

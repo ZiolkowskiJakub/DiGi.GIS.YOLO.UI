@@ -449,7 +449,14 @@ namespace DiGi.GIS.YOLO.UI
                         continue;
                     }
 
-                    List<YearBuiltData> yearBuiltDatas = await Query.YearBuiltDatasAsync(gisWebAPIManager, countyId, years_ByReference, runTimestamp, yearBuiltPredictionPipelineOptions.UpdateYearBuiltData, maxConcurrentRequests, postOptions_Item, cancellationToken);
+                    List<YearBuiltData> yearBuiltDatas = await Query.YearBuiltDatasAsync(gisWebAPIManager, countyId, years_ByReference, runTimestamp, yearBuiltPredictionPipelineOptions.UpdateYearBuiltData, referenceBatchSize, postOptions_Bulk, cancellationToken);
+
+                    // Every reference that is read yields exactly one datum, so a smaller result means at least
+                    // one page was skipped and the buildings of it must not be written as if they had been read.
+                    if (yearBuiltDatas.Count < years_ByReference.Count)
+                    {
+                        Fail(nameof(Query.YearBuiltDatasAsync), countyId);
+                    }
 
                     for (int i = 0; i < yearBuiltDatas.Count; i += batchSize)
                     {
