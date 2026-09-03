@@ -2,6 +2,7 @@ using DiGi.GIS.IO.Interfaces;
 using DiGi.GIS.ML.Classes;
 using DiGi.GIS.WebAPI.Classes;
 using DiGi.GIS.YOLO.UI.Classes;
+using DiGi.GIS.YOLO.UI.Enums;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -19,30 +20,20 @@ namespace DiGi.GIS.YOLO.UI.ConsoleApp
         /// Executes the headless Year Built prediction pipeline from command-line arguments.
         /// </summary>
         /// <param name="args">Optional arguments. The first argument specifies the path to the options JSON file.</param>
-        /// <returns>
-        /// An exit code indicating the result:
-        /// <list type="bullet">
-        /// <item><description>0: Pipeline executed successfully.</description></item>
-        /// <item><description>1: Configuration or argument validation error.</description></item>
-        /// <item><description>2: Preflight environment check failed.</description></item>
-        /// <item><description>3: WebAPI key or client configuration missing.</description></item>
-        /// <item><description>4: Pipeline execution failure.</description></item>
-        /// <item><description>5: Execution cancelled by user.</description></item>
-        /// </list>
-        /// </returns>
+        /// <returns>One of <see cref="Enums.YearBuiltPredictionExitCode"/> as an integer. Only <see cref="Enums.YearBuiltPredictionExitCode.Succeeded"/> means a run finished; the rest say why one did not, and a caller reads them through that enumeration rather than against literals of its own.</returns>
         public static async Task<int> Main(string[] args)
         {
             Console.WriteLine("=================================================");
             Console.WriteLine(" DiGi.GIS.YOLO.UI Headless Prediction Runner");
             Console.WriteLine("=================================================");
 
-            int Fail(string message, int exitCode)
+            int Fail(string message, YearBuiltPredictionExitCode yearBuiltPredictionExitCode)
             {
                 Console.ForegroundColor = ConsoleColor.Red;
                 Console.WriteLine($"[ERROR] {message}");
                 Console.ResetColor();
                 Serilog.Modify.Log(Serilog.Enums.LogEventLevel.Error, message);
-                return exitCode;
+                return (int)yearBuiltPredictionExitCode;
             }
 
             string? path_Options = args.Length > 0 ? args[0] : null;
@@ -51,29 +42,29 @@ namespace DiGi.GIS.YOLO.UI.ConsoleApp
             if (options is null)
             {
                 Console.WriteLine("Usage: DiGi.GIS.YOLO.UI.ConsoleApp [path-to-options.json]");
-                return Fail($"Year Built prediction pipeline options could not be loaded from {(string.IsNullOrWhiteSpace(path_Options) ? "default location" : path_Options)}.", 1);
+                return Fail($"Year Built prediction pipeline options could not be loaded from {(string.IsNullOrWhiteSpace(path_Options) ? "default location" : path_Options)}.", YearBuiltPredictionExitCode.Configuration);
             }
 
             if (options.CountyIds is null || !options.CountyIds.Any(x => x > 0))
             {
-                return Fail("Pipeline options must specify at least one positive CountyId.", 1);
+                return Fail("Pipeline options must specify at least one positive CountyId.", YearBuiltPredictionExitCode.Configuration);
             }
 
             if (string.IsNullOrWhiteSpace(options.ScratchDirectory))
             {
-                return Fail("Pipeline options must specify a non-empty ScratchDirectory.", 1);
+                return Fail("Pipeline options must specify a non-empty ScratchDirectory.", YearBuiltPredictionExitCode.Configuration);
             }
 
             string? key = Query.Key();
             if (string.IsNullOrWhiteSpace(key))
             {
-                return Fail($"WebAPI authorization key not found in '{Constants.FileName.GISWebAPIClientConfigurationFile}'.", 3);
+                return Fail($"WebAPI authorization key not found in '{Constants.FileName.GISWebAPIClientConfigurationFile}'.", YearBuiltPredictionExitCode.Authorization);
             }
 
             GISWebAPIManager? gisWebAPIManager = WebAPI.Create.GISWebAPIManager(key);
             if (gisWebAPIManager is null)
             {
-                return Fail("Failed to initialize GISWebAPIManager with the provided key.", 3);
+                return Fail("Failed to initialize GISWebAPIManager with the provided key.", YearBuiltPredictionExitCode.Authorization);
             }
 
             string? modelPath_Resolved = Query.ModelPath(options.ModelPath);
@@ -101,9 +92,12 @@ namespace DiGi.GIS.YOLO.UI.ConsoleApp
 
             try
             {
+                // Through the shared builder rather than a format literal: the tray application's background task
+                // reads these lines back with Query.ProgressCount, and a format written twice is a contract nothing
+                // checks.
                 Progress<long> progress = new(count =>
                 {
-                    Console.WriteLine($"[PROGRESS] Processed {count} items...");
+                    Console.WriteLine(Create.ProgressMessage(count));
                 });
 
                 IYearBuiltPredictor yearBuiltPredictor = new YearBuiltPredictor();
@@ -123,7 +117,7 @@ namespace DiGi.GIS.YOLO.UI.ConsoleApp
                     Console.ForegroundColor = ConsoleColor.Yellow;
                     Console.WriteLine("[INFO] Pipeline execution cancelled.");
                     Console.ResetColor();
-                    return 5;
+                    return (int)YearBuiltPredictionExitCode.Cancelled;
                 }
                 catch (Exception exception)
                 {
@@ -131,7 +125,7 @@ namespace DiGi.GIS.YOLO.UI.ConsoleApp
                     Console.WriteLine($"[FATAL] Unhandled pipeline error: {exception.Message}");
                     Console.ResetColor();
                     Serilog.Modify.Log(exception, "Unhandled error during pipeline execution");
-                    return 4;
+                    return (int)YearBuiltPredictionExitCode.Failed;
                 }
 
                 // Everything the run has to say beyond its tallies arrives here - the mis-scoped county, the county
@@ -152,12 +146,12 @@ namespace DiGi.GIS.YOLO.UI.ConsoleApp
                     Console.ForegroundColor = ConsoleColor.Yellow;
                     Console.WriteLine("[INFO] Pipeline execution cancelled.");
                     Console.ResetColor();
-                    return 5;
+                    return (int)YearBuiltPredictionExitCode.Cancelled;
                 }
 
                 if (result is null)
                 {
-                    return Fail("Pipeline execution returned a null result.", 4);
+                    return Fail("Pipeline execution returned a null result.", YearBuiltPredictionExitCode.Failed);
                 }
 
                 if (result.FailedStepNames is List<string> failedStepNames && failedStepNames.Count != 0)
@@ -172,7 +166,7 @@ namespace DiGi.GIS.YOLO.UI.ConsoleApp
 
                     // The environment preflight keeps its own exit code: a machine that cannot run the detector at
                     // all is a different thing to fix than a step that failed while running.
-                    return failedStepNames.Contains(nameof(DiGi.YOLO.Query.YOLOEnvironmentResult)) ? 2 : 4;
+                    return (int)(failedStepNames.Contains(nameof(DiGi.YOLO.Query.YOLOEnvironmentResult)) ? YearBuiltPredictionExitCode.Environment : YearBuiltPredictionExitCode.Failed);
                 }
 
                 Console.ForegroundColor = ConsoleColor.Green;
@@ -187,7 +181,7 @@ namespace DiGi.GIS.YOLO.UI.ConsoleApp
                 Console.WriteLine("=================================================");
                 Console.ResetColor();
 
-                return 0;
+                return (int)YearBuiltPredictionExitCode.Succeeded;
             }
             finally
             {

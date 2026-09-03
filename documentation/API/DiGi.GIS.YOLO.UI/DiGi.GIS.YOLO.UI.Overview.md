@@ -7,4 +7,5 @@
 | [DiGi\.GIS\.YOLO\.UI](DiGi.GIS.YOLO.UI.md 'DiGi\.GIS\.YOLO\.UI') | |
 | [DiGi\.GIS\.YOLO\.UI\.Classes](DiGi.GIS.YOLO.UI.Classes.md 'DiGi\.GIS\.YOLO\.UI\.Classes') | |
 | [DiGi\.GIS\.YOLO\.UI\.Constants](DiGi.GIS.YOLO.UI.Constants.md 'DiGi\.GIS\.YOLO\.UI\.Constants') | |
+| [DiGi\.GIS\.YOLO\.UI\.Enums](DiGi.GIS.YOLO.UI.Enums.md 'DiGi\.GIS\.YOLO\.UI\.Enums') | |
 | [DiGi\.GIS\.YOLO\.UI\.Interfaces](DiGi.GIS.YOLO.UI.Interfaces.md 'DiGi\.GIS\.YOLO\.UI\.Interfaces') | |

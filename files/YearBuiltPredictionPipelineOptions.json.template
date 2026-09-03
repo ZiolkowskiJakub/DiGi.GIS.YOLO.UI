@@ -6,6 +6,7 @@
   "WorkingDirectory": null,
   "Confidence": 0.1,
   "Years": null,
+  "Radiuses": null,
   "MaxConcurrentRequests": 8,
   "BatchSize": 5000,
   "ReferenceBatchSize": 10000,

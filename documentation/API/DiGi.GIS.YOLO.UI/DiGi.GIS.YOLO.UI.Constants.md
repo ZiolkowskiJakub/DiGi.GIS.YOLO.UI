@@ -111,3 +111,31 @@ public const string YearBuiltPredictionPipelineOptions = "YearBuiltPredictionPip
 
 #### Field Value
 [System\.String](https://learn.microsoft.com/en-us/dotnet/api/system.string 'System\.String')
+
+<a name='DiGi.GIS.YOLO.UI.Constants.MessagePrefix'></a>
+
+## MessagePrefix Class
+
+Provides the prefixes the headless runner marks its console output with\.
+
+The runner's standard output is a contract when it is driven by another process rather than read by a person, and a prefix written as a literal on both sides of the pipe is a contract nothing checks. Naming them here is what lets a change to one of them fail to compile instead of quietly costing a caller its progress reporting.
+
+```csharp
+public static class MessagePrefix
+```
+
+Inheritance [System\.Object](https://learn.microsoft.com/en-us/dotnet/api/system.object 'System\.Object') → MessagePrefix
+### Fields
+
+<a name='DiGi.GIS.YOLO.UI.Constants.MessagePrefix.Progress'></a>
+
+## MessagePrefix\.Progress Field
+
+Gets the prefix of the line reporting how many items a run has carried through a step\.
+
+```csharp
+public const string Progress = "[PROGRESS]";
+```
+
+#### Field Value
+[System\.String](https://learn.microsoft.com/en-us/dotnet/api/system.string 'System\.String')

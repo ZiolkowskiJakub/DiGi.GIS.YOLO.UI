@@ -3,6 +3,42 @@
 ## DiGi\.GIS\.YOLO\.UI Namespace
 ### Classes
 
+<a name='DiGi.GIS.YOLO.UI.Create'></a>
+
+## Create Class
+
+```csharp
+public static class Create
+```
+
+Inheritance [System\.Object](https://learn.microsoft.com/en-us/dotnet/api/system.object 'System\.Object') → Create
+### Methods
+
+<a name='DiGi.GIS.YOLO.UI.Create.ProgressMessage(long)'></a>
+
+## Create\.ProgressMessage\(long\) Method
+
+Builds the line the headless runner writes to report how far a run has got\.
+
+The line is read back by [ProgressCount\(string\)](DiGi.GIS.YOLO.UI.md#DiGi.GIS.YOLO.UI.Query.ProgressCount(string) 'DiGi\.GIS\.YOLO\.UI\.Query\.ProgressCount\(string\)'), so both sides of the pipe are built from this one method rather than from a format literal written twice. A caller watching the runner's standard output has no other way to learn what a long run is doing.
+
+Invariant culture, because the reader is a machine: a thousands separator taken from the machine's own settings would make the count unparseable on exactly the machines that use one.
+
+```csharp
+public static string ProgressMessage(long count);
+```
+#### Parameters
+
+<a name='DiGi.GIS.YOLO.UI.Create.ProgressMessage(long).count'></a>
+
+`count` [System\.Int64](https://learn.microsoft.com/en-us/dotnet/api/system.int64 'System\.Int64')
+
+The running total of items the run has carried through a step\.
+
+#### Returns
+[System\.String](https://learn.microsoft.com/en-us/dotnet/api/system.string 'System\.String')  
+The progress line, without a trailing line break\.
+
 <a name='DiGi.GIS.YOLO.UI.Modify'></a>
 
 ## Modify Class
@@ -393,6 +429,29 @@ The configured model path, which may be relative to the application directory or
 #### Returns
 [System\.String](https://learn.microsoft.com/en-us/dotnet/api/system.string 'System\.String')  
 The resolved absolute path if the model file exists; otherwise, the normalized path or null\.
+
+<a name='DiGi.GIS.YOLO.UI.Query.ProgressCount(string)'></a>
+
+## Query\.ProgressCount\(string\) Method
+
+Reads the running total out of one line of the headless runner's standard output\.
+
+The counterpart of [ProgressMessage\(long\)](DiGi.GIS.YOLO.UI.md#DiGi.GIS.YOLO.UI.Create.ProgressMessage(long) 'DiGi\.GIS\.YOLO\.UI\.Create\.ProgressMessage\(long\)'). A caller pumping the runner's output passes every line through this and reports the ones that carry a count; a line that is not a progress line - a banner, a note, a tally - answers null rather than zero, so a caller cannot mistake other output for a run that has done nothing.
+
+```csharp
+public static System.Nullable<long> ProgressCount(string? line);
+```
+#### Parameters
+
+<a name='DiGi.GIS.YOLO.UI.Query.ProgressCount(string).line'></a>
+
+`line` [System\.String](https://learn.microsoft.com/en-us/dotnet/api/system.string 'System\.String')
+
+One line of the runner's standard output\. Null, empty and unrecognised lines all answer null\.
+
+#### Returns
+[System\.Nullable&lt;](https://learn.microsoft.com/en-us/dotnet/api/system.nullable-1 'System\.Nullable\`1')[System\.Int64](https://learn.microsoft.com/en-us/dotnet/api/system.int64 'System\.Int64')[&gt;](https://learn.microsoft.com/en-us/dotnet/api/system.nullable-1 'System\.Nullable\`1')  
+The running total the line reports, or null when the line is not a progress line\.
 
 <a name='DiGi.GIS.YOLO.UI.Query.SiblingCountyIds(System.Collections.Generic.IEnumerable_DiGi.GIS.PostgreSQL.Classes.AdministrativeAreal2DReference_,System.Collections.Generic.IEnumerable_int_)'></a>
 

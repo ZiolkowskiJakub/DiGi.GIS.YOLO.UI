@@ -37,6 +37,7 @@ namespace DiGi.GIS.YOLO.UI.Classes
                 MaxConcurrentRequests = yearBuiltPredictionPipelineOptions.MaxConcurrentRequests;
                 ModelPath = yearBuiltPredictionPipelineOptions.ModelPath;
                 PythonPath = yearBuiltPredictionPipelineOptions.PythonPath;
+                Radiuses = yearBuiltPredictionPipelineOptions.Radiuses is null ? null : [.. yearBuiltPredictionPipelineOptions.Radiuses];
                 ReferenceBatchSize = yearBuiltPredictionPipelineOptions.ReferenceBatchSize;
                 Resume = yearBuiltPredictionPipelineOptions.Resume;
                 RunPrediction = yearBuiltPredictionPipelineOptions.RunPrediction;
