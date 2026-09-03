@@ -8,7 +8,7 @@ namespace DiGi.GIS.YOLO.UI.Classes
 {
     /// <summary>
     /// Provides the settings one unattended run of the Year Built prediction pipeline needs: which counties it covers, where it keeps its scratch files, which weights and interpreter score the imagery, and which of its steps actually run.
-    /// <para>Every step carries its own flag so a run can be resumed without repeating the expensive ones. Turning the write steps off is also how a first pass over a county is made harmless - the run reads everything, scores everything and stores nothing.</para>
+    /// <para>Every step carries its own flag so a run can be resumed without repeating the expensive ones. The three write steps are off by default, so a first pass over a county is harmless - the run reads everything, scores everything and stores nothing.</para>
     /// <para>There is deliberately no member for the Web API key. These options are written to disk as JSON and the key is a secret, so it travels on <see cref="GIS.WebAPI.Classes.GISWebAPIManager.Key"/>, which the host reads from a git-ignored configuration file.</para>
     /// </summary>
     public class YearBuiltPredictionPipelineOptions : SerializableOptions, IGISYOLOUISerializableObject
@@ -148,21 +148,21 @@ namespace DiGi.GIS.YOLO.UI.Classes
         /// Gets or sets whether the detection features are written into the stored building data.
         /// </summary>
         [JsonInclude, JsonPropertyName(nameof(UpdateDetections))]
-        public bool UpdateDetections { get; set; } = true;
+        public bool UpdateDetections { get; set; } = false;
 
         /// <summary>
         /// Gets or sets whether the latest predicted construction year is written into the building data column.
         /// <para>Written from the same merged year built data the history step builds, so the column and the history cannot disagree.</para>
         /// </summary>
         [JsonInclude, JsonPropertyName(nameof(UpdatePredictedYearBuilt))]
-        public bool UpdatePredictedYearBuilt { get; set; } = true;
+        public bool UpdatePredictedYearBuilt { get; set; } = false;
 
         /// <summary>
         /// Gets or sets whether the dated prediction is written into the year built data, preserving the history.
         /// <para>The stored entry is read back and added to rather than replaced, because a year built datum built fresh carries a new identifier and would be stored alongside the building's existing one rather than in place of it.</para>
         /// </summary>
         [JsonInclude, JsonPropertyName(nameof(UpdateYearBuiltData))]
-        public bool UpdateYearBuiltData { get; set; } = true;
+        public bool UpdateYearBuiltData { get; set; } = false;
 
         /// <summary>
         /// Gets or sets the directory the prediction process runs in, which is also where the runner keeps the Python scripts.

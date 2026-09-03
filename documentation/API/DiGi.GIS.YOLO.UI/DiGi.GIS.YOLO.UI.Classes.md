@@ -9,7 +9,7 @@
 
 Provides the settings one unattended run of the Year Built prediction pipeline needs: which counties it covers, where it keeps its scratch files, which weights and interpreter score the imagery, and which of its steps actually run\.
 
-Every step carries its own flag so a run can be resumed without repeating the expensive ones. Turning the write steps off is also how a first pass over a county is made harmless - the run reads everything, scores everything and stores nothing.
+Every step carries its own flag so a run can be resumed without repeating the expensive ones. The three write steps are off by default, so a first pass over a county is harmless - the run reads everything, scores everything and stores nothing.
 
 There is deliberately no member for the Web API key. These options are written to disk as JSON and the key is a secret, so it travels on [DiGi\.GIS\.WebAPI\.Classes\.GISWebAPIManager\.Key](https://learn.microsoft.com/en-us/dotnet/api/digi.gis.webapi.classes.giswebapimanager.key 'DiGi\.GIS\.WebAPI\.Classes\.GISWebAPIManager\.Key'), which the host reads from a git-ignored configuration file.
 

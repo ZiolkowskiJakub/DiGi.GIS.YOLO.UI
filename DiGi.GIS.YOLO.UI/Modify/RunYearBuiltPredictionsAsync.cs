@@ -22,7 +22,7 @@ namespace DiGi.GIS.YOLO.UI
         /// <summary>
         /// Runs the Year Built prediction pipeline over the counties named in the options, from the stored orthophoto imagery through to the stored prediction.
         /// <para>Six steps per county: export the imagery, score it with the frozen detector, turn the detections into objects, write them into the building data, read the feature columns back and score them into a construction year, and store that year twice - dated into the year built data, and latest into the building data column.</para>
-        /// <para>Each step carries its own flag, so a run can be resumed without repeating the expensive ones, and a first pass over a county can be made harmless by turning the three write steps off. Each step is idempotent: the scratch paths are derived from the county identifier, the detector overwrites its results file rather than appending to it, and a stored year built datum is read back and added to rather than replaced.</para>
+        /// <para>Each step carries its own flag, so a run can be resumed without repeating the expensive ones, and the three write steps are off by default, so a first pass over a county reads and scores but stores nothing unless a write step is named on. Each step is idempotent: the scratch paths are derived from the county identifier, the detector overwrites its results file rather than appending to it, and a stored year built datum is read back and added to rather than replaced.</para>
         /// <para>Only a building the detector fired on at least once is scored. A building it never fired on carries no per-year confidence series, which is the feature the regressor was built around, so scoring it would be scoring a row of absent features. The consequence is that the run predicts a year for fewer buildings than the file based workflow it replaces, which scored every row of its table - worth knowing before comparing the two reference by reference.</para>
         /// <para>The scope is checked before any of it starts. A county identifier that is in no county row - most often a four character county code passed where an identifier was wanted - matches no stored building, so every step reports a legitimate zero and the run ends green having done nothing at all. That is a mis-scoped run rather than an empty county, so it fails here instead.</para>
         /// <para>A county that fails is logged and stepped over, so one unreachable county cannot cost the run the counties behind it. The result therefore comes back either way - <see cref="YearBuiltPredictionResult.FailedStepNames"/> is what says whether the run did everything it set out to do.</para>
@@ -112,6 +112,14 @@ namespace DiGi.GIS.YOLO.UI
             Serilog.Modify.Log(
                 "{Method} started: {CountyCount} counties, scratch {ScratchDirectory}, export {ExportImages}, predict {RunPrediction}, score {Score}, write detections {UpdateDetections}, write year built data {UpdateYearBuiltData}, write predicted year {UpdatePredictedYearBuilt}",
                 nameof(RunYearBuiltPredictionsAsync), countyIds.Count, scratchDirectory, yearBuiltPredictionPipelineOptions.ExportImages, yearBuiltPredictionPipelineOptions.RunPrediction, yearBuiltPredictionPipelineOptions.Score, yearBuiltPredictionPipelineOptions.UpdateDetections, yearBuiltPredictionPipelineOptions.UpdateYearBuiltData, yearBuiltPredictionPipelineOptions.UpdatePredictedYearBuilt);
+
+            //The write steps are off by default, so reaching this point with one on is a deliberate choice, and the
+            //consequence - writing the deployed building and year built data - is stated up front the way an
+            //unresolvable county is refused, rather than discovered from a run that has already started writing.
+            if (yearBuiltPredictionPipelineOptions.UpdateDetections || yearBuiltPredictionPipelineOptions.UpdateYearBuiltData || yearBuiltPredictionPipelineOptions.UpdatePredictedYearBuilt)
+            {
+                Serilog.Modify.Log(Serilog.Enums.LogEventLevel.Warning, "{Method}: this run WRITES the deployed data of {CountyCount} county(ies) {CountyIds} - detections {UpdateDetections}, year built data {UpdateYearBuiltData}, predicted year {UpdatePredictedYearBuilt}", nameof(RunYearBuiltPredictionsAsync), countyIds.Count, string.Join(", ", countyIds), yearBuiltPredictionPipelineOptions.UpdateDetections, yearBuiltPredictionPipelineOptions.UpdateYearBuiltData, yearBuiltPredictionPipelineOptions.UpdatePredictedYearBuilt);
+            }
 
             if (yearBuiltPredictionPipelineOptions.RunPrediction)
             {

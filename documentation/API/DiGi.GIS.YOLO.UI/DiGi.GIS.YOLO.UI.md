@@ -111,7 +111,7 @@ Runs the Year Built prediction pipeline over the counties named in the options, 
 
 Six steps per county: export the imagery, score it with the frozen detector, turn the detections into objects, write them into the building data, read the feature columns back and score them into a construction year, and store that year twice - dated into the year built data, and latest into the building data column.
 
-Each step carries its own flag, so a run can be resumed without repeating the expensive ones, and a first pass over a county can be made harmless by turning the three write steps off. Each step is idempotent: the scratch paths are derived from the county identifier, the detector overwrites its results file rather than appending to it, and a stored year built datum is read back and added to rather than replaced.
+Each step carries its own flag, so a run can be resumed without repeating the expensive ones, and the three write steps are off by default, so a first pass over a county reads and scores but stores nothing unless a write step is named on. Each step is idempotent: the scratch paths are derived from the county identifier, the detector overwrites its results file rather than appending to it, and a stored year built datum is read back and added to rather than replaced.
 
 Only a building the detector fired on at least once is scored. A building it never fired on carries no per-year confidence series, which is the feature the regressor was built around, so scoring it would be scoring a row of absent features. The consequence is that the run predicts a year for fewer buildings than the file based workflow it replaces, which scored every row of its table - worth knowing before comparing the two reference by reference.
 
