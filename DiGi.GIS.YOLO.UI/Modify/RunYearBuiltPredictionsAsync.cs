@@ -189,6 +189,10 @@ namespace DiGi.GIS.YOLO.UI
                 columnUniqueIds.Insert(0, columnUniqueId_Reference);
             }
 
+            // The same allow-list, grouped by the run that populates each group, so a county missing one
+            // can be told which run it is waiting on rather than only that its prediction was poor.
+            Dictionary<string, List<Column>> columns_ByGroup = DiGi.GIS.IO.Query.YearBuiltPredictionFeatureGroups(yearBuiltPredictionPipelineOptions.Years, yearBuiltPredictionPipelineOptions.Radiuses);
+
             foreach (int countyId in countyIds)
             {
                 if (cancellationToken.IsCancellationRequested)
@@ -309,6 +313,9 @@ namespace DiGi.GIS.YOLO.UI
                         }
                     }
 
+                    bool checked_FeatureCoverage = false;
+                    bool refused_FeatureCoverage = false;
+
                     Dictionary<string, short> years_ByReference = [];
 
                     for (int i = 0; i < references.Count; i += referenceBatchSize)
@@ -329,6 +336,50 @@ namespace DiGi.GIS.YOLO.UI
                         }
 
                         featureRowCount += table_Features.RowCount;
+
+                        // The features come from the building data, not from the detections just parsed, so a
+                        // county scores against whatever the update runs have put there. A feature group that is
+                        // wholly absent or wholly default is not a sparse feature - it is a run that has not
+                        // happened - and the scorer cannot tell the two apart: it reads both as the type default
+                        // and returns an ordinary looking year. Checked once per county, on the first page that
+                        // returns rows, because whether a run has happened is a property of the county.
+                        if (!checked_FeatureCoverage && table_Features.RowCount != 0)
+                        {
+                            checked_FeatureCoverage = true;
+
+                            foreach (KeyValuePair<string, List<Column>> keyValuePair in columns_ByGroup)
+                            {
+                                List<string> names_Unpopulated = DiGi.GIS.IO.Query.UnpopulatedColumnNames(table_Features, keyValuePair.Value);
+                                if (names_Unpopulated.Count == 0)
+                                {
+                                    continue;
+                                }
+
+                                bool required = keyValuePair.Key == DiGi.GIS.IO.Constants.YearBuiltPredictionFeatureGroup.Detection || keyValuePair.Key == DiGi.GIS.IO.Constants.YearBuiltPredictionFeatureGroup.Population;
+                                if (required && names_Unpopulated.Count == keyValuePair.Value.Count)
+                                {
+                                    string remedy = keyValuePair.Key == DiGi.GIS.IO.Constants.YearBuiltPredictionFeatureGroup.Detection
+                                        ? "Run this pipeline over the county with UpdateDetections set, then score it."
+                                        : "Run the building data update over the county with the Statistical update type, then score it.";
+
+                                    string message = string.Format(System.Globalization.CultureInfo.InvariantCulture, "County {0} carries none of its {1} {2} feature columns, so every one of them would reach the model as a default and the predictions would be worse by an amount nothing measures. {3}", countyId, keyValuePair.Value.Count, keyValuePair.Key, remedy);
+
+                                    messages.Add(message);
+                                    Serilog.Modify.Log(Serilog.Enums.LogEventLevel.Error, "{Method}: {Message}", nameof(RunYearBuiltPredictionsAsync), message);
+
+                                    refused_FeatureCoverage = true;
+                                    continue;
+                                }
+
+                                Serilog.Modify.Log(Serilog.Enums.LogEventLevel.Warning, "{Method}: {UnpopulatedCount} of the {ColumnCount} {Group} feature columns carry nothing for county {CountyId} - those features reach the model as their type default", nameof(RunYearBuiltPredictionsAsync), names_Unpopulated.Count, keyValuePair.Value.Count, keyValuePair.Key, countyId);
+                            }
+
+                            if (refused_FeatureCoverage)
+                            {
+                                Fail(nameof(DiGi.GIS.IO.Query.UnpopulatedColumnNames), countyId);
+                                break;
+                            }
+                        }
 
                         Table? table_Predictions = yearBuiltPredictor.Predict(table_Features);
                         if (table_Predictions is null)
@@ -371,6 +422,11 @@ namespace DiGi.GIS.YOLO.UI
                     if (cancelled)
                     {
                         break;
+                    }
+
+                    if (refused_FeatureCoverage)
+                    {
+                        continue;
                     }
 
                     predictionCount += years_ByReference.Count;
