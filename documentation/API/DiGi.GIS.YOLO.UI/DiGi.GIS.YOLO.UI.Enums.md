@@ -34,7 +34,7 @@ The options could not be loaded, or they name no county or no scratch directory\
 
 `Environment` 2
 
-The preflight found that this machine cannot run the detector \- no CPython carrying ultralytics, or no weights\. Nothing was exported\.
+The preflight found that this machine cannot run the detector or score its buildings \- no CPython carrying ultralytics, no weights, or no year built model\. Nothing was exported\.
 
 <a name='DiGi.GIS.YOLO.UI.Enums.YearBuiltPredictionExitCode.Authorization'></a>
 
