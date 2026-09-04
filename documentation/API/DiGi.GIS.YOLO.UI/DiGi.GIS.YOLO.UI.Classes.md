@@ -82,6 +82,25 @@ public int BatchSize { get; set; }
 #### Property Value
 [System\.Int32](https://learn.microsoft.com/en-us/dotnet/api/system.int32 'System\.Int32')
 
+<a name='DiGi.GIS.YOLO.UI.Classes.YearBuiltPredictionPipelineOptions.CleanScratchDirectory'></a>
+
+## YearBuiltPredictionPipelineOptions\.CleanScratchDirectory Property
+
+Gets or sets whether each county's scratch folder \- the imagery exported for it and the detection results written from it \- is deleted once the run has finished with that county\.
+
+On by default, so a run leaves nothing behind. The alternative is what this replaced: the scoring step rebuilds its list of buildings from the results file on disk rather than from the stored detections, so a county whose scratch folder went missing between two separate runs was skipped in silence even though its detection columns were already stored. A run that always cleans up has no between.
+
+Only a county that came through without a failed step is cleaned. One that failed keeps its imagery and its detections, so re-running it costs seconds rather than the half hour of export and hour and a half of inference that produced them. The feature coverage refusal is the case that makes this worth the extra condition: it is a configuration error, it is reproducible, and it fires only after both of those steps have already been paid for. A cancelled county is cleaned - stopping a run is a deliberate act, and what it leaves behind is not a partial success.
+
+Turn it off for the split detections-then-score workflow, whose second run reads the first run's results file, and for a run that is meant to be resumed. The committed split templates set it to false for exactly that reason.
+
+```csharp
+public bool CleanScratchDirectory { get; set; }
+```
+
+#### Property Value
+[System\.Boolean](https://learn.microsoft.com/en-us/dotnet/api/system.boolean 'System\.Boolean')
+
 <a name='DiGi.GIS.YOLO.UI.Classes.YearBuiltPredictionPipelineOptions.Confidence'></a>
 
 ## YearBuiltPredictionPipelineOptions\.Confidence Property

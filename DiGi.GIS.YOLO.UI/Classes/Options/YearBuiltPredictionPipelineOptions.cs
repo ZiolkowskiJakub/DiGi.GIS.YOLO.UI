@@ -31,6 +31,7 @@ namespace DiGi.GIS.YOLO.UI.Classes
             if (yearBuiltPredictionPipelineOptions is not null)
             {
                 BatchSize = yearBuiltPredictionPipelineOptions.BatchSize;
+                CleanScratchDirectory = yearBuiltPredictionPipelineOptions.CleanScratchDirectory;
                 Confidence = yearBuiltPredictionPipelineOptions.Confidence;
                 CountyIds = yearBuiltPredictionPipelineOptions.CountyIds is null ? null : [.. yearBuiltPredictionPipelineOptions.CountyIds];
                 ExportImages = yearBuiltPredictionPipelineOptions.ExportImages;
@@ -66,6 +67,15 @@ namespace DiGi.GIS.YOLO.UI.Classes
         /// </summary>
         [JsonInclude, JsonPropertyName(nameof(BatchSize))]
         public int BatchSize { get; set; } = 5000;
+
+        /// <summary>
+        /// Gets or sets whether each county's scratch folder - the imagery exported for it and the detection results written from it - is deleted once the run has finished with that county.
+        /// <para>On by default, so a run leaves nothing behind. The alternative is what this replaced: the scoring step rebuilds its list of buildings from the results file on disk rather than from the stored detections, so a county whose scratch folder went missing between two separate runs was skipped in silence even though its detection columns were already stored. A run that always cleans up has no between.</para>
+        /// <para>Only a county that came through without a failed step is cleaned. One that failed keeps its imagery and its detections, so re-running it costs seconds rather than the half hour of export and hour and a half of inference that produced them. The feature coverage refusal is the case that makes this worth the extra condition: it is a configuration error, it is reproducible, and it fires only after both of those steps have already been paid for. A cancelled county is cleaned - stopping a run is a deliberate act, and what it leaves behind is not a partial success.</para>
+        /// <para>Turn it off for the split detections-then-score workflow, whose second run reads the first run's results file, and for a run that is meant to be resumed. The committed split templates set it to false for exactly that reason.</para>
+        /// </summary>
+        [JsonInclude, JsonPropertyName(nameof(CleanScratchDirectory))]
+        public bool CleanScratchDirectory { get; set; } = true;
 
         /// <summary>
         /// Gets or sets the confidence threshold a detection has to reach to be reported, passed to the prediction script as --conf.

@@ -11,6 +11,7 @@
   "BatchSize": 5000,
   "ReferenceBatchSize": 10000,
   "Resume": true,
+  "CleanScratchDirectory": false,
   "ExportImages": true,
   "RunPrediction": true,
   "Score": false,

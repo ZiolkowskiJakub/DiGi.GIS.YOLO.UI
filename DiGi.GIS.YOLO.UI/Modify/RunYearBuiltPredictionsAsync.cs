@@ -25,6 +25,7 @@ namespace DiGi.GIS.YOLO.UI
         /// <para>Each step carries its own flag, so a run can be resumed without repeating the expensive ones, and the three write steps are off by default, so a first pass over a county reads and scores but stores nothing unless a write step is named on. Each step is idempotent: the scratch paths are derived from the county identifier, the detector overwrites its results file rather than appending to it, and a stored year built datum is read back and added to rather than replaced.</para>
         /// <para>Only a building the detector fired on at least once is scored. A building it never fired on carries no per-year confidence series, which is the feature the regressor was built around, so scoring it would be scoring a row of absent features. The consequence is that the run predicts a year for fewer buildings than the file based workflow it replaces, which scored every row of its table - worth knowing before comparing the two reference by reference.</para>
         /// <para>The scope is checked before any of it starts. A county identifier that is in no county row - most often a four character county code passed where an identifier was wanted - matches no stored building, so every step reports a legitimate zero and the run ends green having done nothing at all. That is a mis-scoped run rather than an empty county, so it fails here instead.</para>
+        /// <para>The scratch folder of a county that came through without a failed step is removed once the run has finished with it, unless <see cref="YearBuiltPredictionPipelineOptions.CleanScratchDirectory"/> says otherwise - so nothing downstream can depend on what a successful county left behind, which is the gap the two pass workflow used to carry. A county that failed keeps its folder, so re-running it costs seconds rather than repeating the export and the inference.</para>
         /// <para>A county that fails is logged and stepped over, so one unreachable county cannot cost the run the counties behind it. The result therefore comes back either way - <see cref="YearBuiltPredictionResult.FailedStepNames"/> is what says whether the run did everything it set out to do.</para>
         /// </summary>
         /// <param name="gisWebAPIManager">The <see cref="GISWebAPIManager"/> instance used to communicate with the WebAPI. It also carries the key the write steps authorize with.</param>
@@ -82,17 +83,47 @@ namespace DiGi.GIS.YOLO.UI
             long yearBuiltDataUpdatedCount = 0;
             bool cancelled = false;
 
+            // Per county rather than read off failedStepNames, which is a run level set that de-duplicates by
+            // step name - two counties failing the same step leave its count unchanged, and the second would
+            // then read as having come through cleanly.
+            bool failed_County = false;
+
             List<string> failedStepNames = [];
             List<string> messages = [];
 
             void Fail(string stepName, int countyId)
             {
+                failed_County = true;
+
                 if (!failedStepNames.Contains(stepName))
                 {
                     failedStepNames.Add(stepName);
                 }
 
                 Serilog.Modify.Log(Serilog.Enums.LogEventLevel.Warning, "Year built prediction step {Step} did not complete - county {CountyId}", stepName, countyId);
+            }
+
+            void CleanScratch(int countyId, string directory)
+            {
+                if (!yearBuiltPredictionPipelineOptions.CleanScratchDirectory)
+                {
+                    return;
+                }
+
+                try
+                {
+                    if (Directory.Exists(directory))
+                    {
+                        Directory.Delete(directory, true);
+                    }
+                }
+                catch (Exception exception)
+                {
+                    // Not a failure of the county. What it wrote is written, and a scratch folder that cannot be
+                    // removed costs disk space rather than correctness - reporting it as a failed step would make a
+                    // finished county read as an unfinished one.
+                    Serilog.Modify.Log(exception, "The scratch directory of county {CountyId} could not be removed - {Directory}", countyId, directory);
+                }
             }
 
             YearBuiltPredictionResult Result()
@@ -222,6 +253,8 @@ namespace DiGi.GIS.YOLO.UI
 
             foreach (int countyId in countyIds)
             {
+                failed_County = false;
+
                 if (cancellationToken.IsCancellationRequested)
                 {
                     cancelled = true;
@@ -289,6 +322,22 @@ namespace DiGi.GIS.YOLO.UI
                     }
                     else
                     {
+                        // With the detector off, the results file is the only record of which buildings it fired on -
+                        // the stored detection columns are never read back for this. A county whose scratch folder was
+                        // cleaned since the detector ran therefore has nothing to score even though its detections are
+                        // already stored, and that is not the same thing as a county the detector found nothing in.
+                        // Only one of the two is recoverable, so they must not report identically.
+                        if (!File.Exists(path_Results))
+                        {
+                            string message = string.Format(System.Globalization.CultureInfo.InvariantCulture, "County {0} has no detection results at {1}. Either the detector has not run over it, or the scratch directory has been cleaned since it did. Run the pipeline over the county with RunPrediction set.", countyId, path_Results);
+
+                            messages.Add(message);
+                            Serilog.Modify.Log(Serilog.Enums.LogEventLevel.Error, "{Method}: {Message}", nameof(RunYearBuiltPredictionsAsync), message);
+
+                            Fail(nameof(DiGi.YOLO.Create.BoundingBoxResultFile), countyId);
+                            continue;
+                        }
+
                         building2DYearBuiltPredictions = DiGi.GIS.YOLO.Create.Building2DYearBuiltPredictions(DiGi.YOLO.Create.BoundingBoxResultFile(path_Results));
                     }
 
@@ -316,7 +365,13 @@ namespace DiGi.GIS.YOLO.UI
                         }
                         else
                         {
+                            // Scoring reads the features back out of the stored building data rather than from the
+                            // detections just parsed, so a half written detection set would be scored against columns
+                            // that are partly this run's and partly whatever preceded it. The coverage guard below
+                            // refuses only a group that is wholly absent, so it cannot catch that. The county is left
+                            // for a re-run instead of scored against what did land.
                             Fail(nameof(UpdateBuildingDataYearBuiltPredictionsAsync), countyId);
+                            continue;
                         }
                     }
 
@@ -535,6 +590,22 @@ namespace DiGi.GIS.YOLO.UI
                 {
                     Fail(nameof(RunYearBuiltPredictionsAsync), countyId);
                     Serilog.Modify.Log(exception, "Year built prediction county failed - county {CountyId}", countyId);
+                }
+                finally
+                {
+                    // Every path out of the county body arrives here, the continues included, so nothing downstream
+                    // can be left depending on what a county that came through cleanly wrote to disk.
+                    //
+                    // A county that failed keeps its scratch folder. The gap this cleanup exists to close is the one
+                    // between a SUCCESSFUL detections pass and a later scoring pass, and that is still closed - while
+                    // a re-run of a failed county costs seconds instead of the half hour of export and hour and a
+                    // half of inference that produced what would otherwise have been deleted. The refusal a feature
+                    // coverage guard raises is the case that makes this matter: it is a configuration error, it is
+                    // reproducible, and it fires only after both of those steps have already been paid for.
+                    if (!failed_County)
+                    {
+                        CleanScratch(countyId, directory_County);
+                    }
                 }
 
                 if (cancelled)

@@ -117,6 +117,8 @@ Only a building the detector fired on at least once is scored. A building it nev
 
 The scope is checked before any of it starts. A county identifier that is in no county row - most often a four character county code passed where an identifier was wanted - matches no stored building, so every step reports a legitimate zero and the run ends green having done nothing at all. That is a mis-scoped run rather than an empty county, so it fails here instead.
 
+The scratch folder of a county that came through without a failed step is removed once the run has finished with it, unless [CleanScratchDirectory](DiGi.GIS.YOLO.UI.Classes.md#DiGi.GIS.YOLO.UI.Classes.YearBuiltPredictionPipelineOptions.CleanScratchDirectory 'DiGi\.GIS\.YOLO\.UI\.Classes\.YearBuiltPredictionPipelineOptions\.CleanScratchDirectory') says otherwise - so nothing downstream can depend on what a successful county left behind, which is the gap the two pass workflow used to carry. A county that failed keeps its folder, so re-running it costs seconds rather than repeating the export and the inference.
+
 A county that fails is logged and stepped over, so one unreachable county cannot cost the run the counties behind it. The result therefore comes back either way - [FailedStepNames](DiGi.GIS.YOLO.UI.Classes.md#DiGi.GIS.YOLO.UI.Classes.YearBuiltPredictionResult.FailedStepNames 'DiGi\.GIS\.YOLO\.UI\.Classes\.YearBuiltPredictionResult\.FailedStepNames') is what says whether the run did everything it set out to do.
 
 ```csharp
