@@ -21,7 +21,7 @@ namespace DiGi.GIS.YOLO.UI.Enums
         [Description("Configuration or argument validation error")] Configuration = 1,
 
         /// <summary>
-        /// The preflight found that this machine cannot run the detector - no CPython carrying ultralytics, or no weights. Nothing was exported.
+        /// The preflight found that this machine cannot run the detector or score its buildings - no CPython carrying ultralytics, no weights, or no year built model. Nothing was exported.
         /// </summary>
         [Description("Preflight environment check failed")] Environment = 2,
 

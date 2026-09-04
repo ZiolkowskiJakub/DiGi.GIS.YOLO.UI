@@ -164,9 +164,12 @@ namespace DiGi.GIS.YOLO.UI.ConsoleApp
                     }
                     Console.ResetColor();
 
-                    // The environment preflight keeps its own exit code: a machine that cannot run the detector at
-                    // all is a different thing to fix than a step that failed while running.
-                    return (int)(failedStepNames.Contains(nameof(DiGi.YOLO.Query.YOLOEnvironmentResult)) ? YearBuiltPredictionExitCode.Environment : YearBuiltPredictionExitCode.Failed);
+                    // The preflights keep their own exit code: a machine that cannot run the detector at all, or
+                    // score with the model it was given, is a different thing to fix than a step that failed while
+                    // running.
+                    bool preflightFailed = failedStepNames.Contains(nameof(DiGi.YOLO.Query.YOLOEnvironmentResult))
+                        || failedStepNames.Contains(nameof(DiGi.GIS.IO.Classes.YearBuiltPredictorReadiness));
+                    return (int)(preflightFailed ? YearBuiltPredictionExitCode.Environment : YearBuiltPredictionExitCode.Failed);
                 }
 
                 Console.ForegroundColor = ConsoleColor.Green;

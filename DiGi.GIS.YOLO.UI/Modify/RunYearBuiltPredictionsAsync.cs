@@ -142,6 +142,25 @@ namespace DiGi.GIS.YOLO.UI
                 }
             }
 
+            // The model file is as much a prerequisite as the interpreter: a runner without it exports a
+            // county of imagery and fails on the first scoring batch, and the Lazy caches that
+            // FileNotFoundException for the life of the process, so every county behind it fails the same way.
+            // Gated on a non-null predictor: the seam is optional by design, and a missing predictor stays the
+            // per-county step failure it is.
+            if (yearBuiltPredictionPipelineOptions.Score && yearBuiltPredictor is not null)
+            {
+                DiGi.GIS.IO.Classes.YearBuiltPredictorReadiness yearBuiltPredictorReadiness = yearBuiltPredictor.YearBuiltPredictorReadiness();
+                if (!yearBuiltPredictorReadiness.Runnable)
+                {
+                    messages.AddRange(yearBuiltPredictorReadiness.Messages);
+                    failedStepNames.Add(nameof(DiGi.GIS.IO.Classes.YearBuiltPredictorReadiness));
+
+                    Serilog.Modify.Log(Serilog.Enums.LogEventLevel.Error, "{Method}: this machine cannot score the buildings - {Messages}", nameof(RunYearBuiltPredictionsAsync), string.Join("; ", yearBuiltPredictorReadiness.Messages));
+
+                    return Result();
+                }
+            }
+
             // Fully qualified: DiGi.GIS.Classes and DiGi.GIS.PostgreSQL.Classes both declare a YearBuiltData, so
             // importing the second namespace here would make the stored one ambiguous further down.
             List<PostgreSQL.Classes.AdministrativeAreal2DReference>? administrativeAreal2DReferences = await Query.CountyReferencesAsync(gisWebAPIManager, postOptions_Item);

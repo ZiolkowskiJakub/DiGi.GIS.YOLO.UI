@@ -45,7 +45,7 @@ Every write step is off in the template on purpose: the pipeline writes deployed
 |---|---|
 | 0 | The run completed and no step reported a failure. |
 | 1 | The options file could not be read, or names no county or no scratch directory. |
-| 2 | The environment preflight failed — this machine cannot run the detector. |
+| 2 | The environment preflight failed — this machine cannot run the detector, or the year built model is missing. |
 | 3 | No Web API authorization key was found. |
 | 4 | A step failed while running. |
 | 5 | The run was cancelled. |
