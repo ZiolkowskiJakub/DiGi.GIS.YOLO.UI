@@ -32,16 +32,16 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<!-- Transitive dependencies of DiGi.GIS.ML -->
-		<PackageReference Include="Microsoft.Bcl.Memory" Version="10.0.5" />
+		<!-- Transitive dependencies of DiGi.GIS.ML, which is reached by HintPath and therefore carries none of its
+		     own NuGet packages into this output. Kept in step with DiGi.GIS.ML's own .csproj, which declares exactly
+		     these two: OrtoBuildingDetectionModel is a LightGbm regression pipeline and touches nothing else.
+		     Microsoft.ML.TorchSharp, TorchSharp-cpu, Microsoft.ML.OneDal, Microsoft.ML.ImageAnalytics,
+		     Microsoft.ML.FastTree, Plotly.NET and Microsoft.Bcl.Memory used to sit here. They were left behind by
+		     ZiolkowskiJakub/DiGi.GIS.ML#5's trim and were shipping about 1.6 GB of runtimes - torch_cpu and onedal
+		     alone are 382 of the 386 MB in win-x64 native - to every deployment, for a model that never loaded them.
+		     Verify with CheckHostDependencies.ps1 after changing this, not with a green build. -->
 		<PackageReference Include="Microsoft.ML" Version="5.0.0" />
-		<PackageReference Include="Microsoft.ML.FastTree" Version="5.0.0" />
-		<PackageReference Include="Microsoft.ML.ImageAnalytics" Version="5.0.0" />
 		<PackageReference Include="Microsoft.ML.LightGbm" Version="5.0.0" />
-		<PackageReference Include="Microsoft.ML.OneDal" Version="0.23.0" />
-		<PackageReference Include="Microsoft.ML.TorchSharp" Version="0.23.0" />
-		<PackageReference Include="Plotly.NET" Version="5.1.0" />
-		<PackageReference Include="TorchSharp-cpu" Version="0.106.0" />
 
 		<!-- Transitive dependencies of DiGi.GIS.WebAPI and DiGi.GIS.PostgreSQL -->
 		<PackageReference Include="MathNet.Numerics" Version="5.0.0" />
