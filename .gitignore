@@ -431,3 +431,6 @@ FodyWeavers.xsd
 # Secrets and machine-specific configuration (see AI Guidelines: Coding - General.md)
 [Uu]ser [Ff]iles/
 
+# Per-county / per-run scratch output (temporary test artifacts)
+scratch/
+
