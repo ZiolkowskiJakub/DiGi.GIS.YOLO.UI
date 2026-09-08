@@ -33,7 +33,7 @@ Two files, both resolved by `Query.ConfigurationFilePath` against the applicatio
 | File | Committed | Purpose |
 |---|---|---|
 | `files/GIS_WebAPI_Client.conf` | yes, with `Key=""` | The deny-by-default placeholder. The real key goes in `user files/GIS_WebAPI_Client.conf` and is never committed. |
-| `files/YearBuiltPredictionPipelineOptions.json.template` | yes | The option set, with every write step off and no county named. Copy it to `user files/YearBuiltPredictionPipelineOptions.json` and edit that. |
+| `files/YearBuiltPredictionPipelineOptions.json` | yes | The option set, with every write step off and no county named. Copy it to `user files/YearBuiltPredictionPipelineOptions.json` and edit that. |
 
 **`CountyIds` are county row identifiers, never county codes.** A code is the four character territorial value (`"2212"`); an identifier is a database row running into six figures, and a county whose territory is in several pieces has **one identifier per piece** — name every one of them, so each written row is filed under the part its reference belongs to. Code `2212` (słupski) is identifiers `73482` and `73485`. Getting this wrong used to produce a green run that exported nothing, detected nothing and scored nothing; `Query.UnknownCountyIds` now stops the run and says which identifiers were meant.
 
