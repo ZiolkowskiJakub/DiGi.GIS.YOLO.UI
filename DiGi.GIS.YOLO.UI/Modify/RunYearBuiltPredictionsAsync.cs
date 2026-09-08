@@ -154,7 +154,19 @@ namespace DiGi.GIS.YOLO.UI
 
             if (yearBuiltPredictionPipelineOptions.RunPrediction)
             {
-                DiGi.YOLO.Classes.YOLOEnvironmentResult yOLOEnvironmentResult = DiGi.YOLO.Query.YOLOEnvironmentResult(yearBuiltPredictionPipelineOptions.PythonPath, yearBuiltPredictionPipelineOptions.ModelPath, yearBuiltPredictionPipelineOptions.WorkingDirectory, cancellationToken);
+                // Resolved here exactly as the county loop resolves it, rather than probed as it was written: the
+                // weights are named relative to the runner, so a preflight asking about a different path from the one
+                // the detector will be given is not a preflight at all. The console app happens to resolve this
+                // before handing the options over, and resolution is idempotent, but the pipeline is a library entry
+                // point and does not rely on its caller having done so.
+                string? modelPath_Preflight = Query.ModelPath(yearBuiltPredictionPipelineOptions.ModelPath);
+                bool found_Model = !string.IsNullOrWhiteSpace(modelPath_Preflight) && File.Exists(modelPath_Preflight);
+
+                // The interpreter is asked about first, and the weights are only handed over when there are weights to
+                // probe. A machine with no CPython carrying ultralytics cannot run the detector whatever the weights
+                // say, so that is the more useful thing to be told; and probing a model path that resolves to nothing
+                // would report the absent interpreter and the absent weights as one indistinguishable failure.
+                DiGi.YOLO.Classes.YOLOEnvironmentResult yOLOEnvironmentResult = DiGi.YOLO.Query.YOLOEnvironmentResult(yearBuiltPredictionPipelineOptions.PythonPath, found_Model ? modelPath_Preflight : null, yearBuiltPredictionPipelineOptions.WorkingDirectory, cancellationToken);
                 if (!yOLOEnvironmentResult.Runnable)
                 {
                     // Learning this from the preflight rather than from the detector's standard error is the
@@ -168,6 +180,25 @@ namespace DiGi.GIS.YOLO.UI
                     failedStepNames.Add(nameof(DiGi.YOLO.Query.YOLOEnvironmentResult));
 
                     Serilog.Modify.Log(Serilog.Enums.LogEventLevel.Error, "{Method}: this machine cannot run the detector - {Messages}", nameof(RunYearBuiltPredictionsAsync), string.Join("; ", yOLOEnvironmentResult.Messages ?? []));
+
+                    return Result();
+                }
+
+                // Refused only once the interpreter has answered for itself, and refused rather than warned about,
+                // because YOLOEnvironmentResult probes only a model it was actually given: weights that are absent or
+                // unresolvable are silently not checked, pass the preflight, and then fail in
+                // Create.YOLOPredictionOptions on the first county - after that county's imagery has been exported.
+                // That is the failure this preflight exists to prevent, and a run started from the tray application
+                // hit it first, because its dialog carries no weights control and the run takes whatever ModelPath
+                // defaults to.
+                if (!found_Model)
+                {
+                    string modelPath_Named = string.IsNullOrWhiteSpace(yearBuiltPredictionPipelineOptions.ModelPath) ? "no weights were named" : yearBuiltPredictionPipelineOptions.ModelPath!;
+
+                    messages.Add(string.Format("The detector weights were not found - {0}", modelPath_Named));
+                    failedStepNames.Add(nameof(Query.ModelPath));
+
+                    Serilog.Modify.Log(Serilog.Enums.LogEventLevel.Error, "{Method}: the detector weights were not found - {ModelPath}", nameof(RunYearBuiltPredictionsAsync), modelPath_Named);
 
                     return Result();
                 }

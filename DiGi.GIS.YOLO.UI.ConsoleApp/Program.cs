@@ -168,6 +168,7 @@ namespace DiGi.GIS.YOLO.UI.ConsoleApp
                     // score with the model it was given, is a different thing to fix than a step that failed while
                     // running.
                     bool preflightFailed = failedStepNames.Contains(nameof(DiGi.YOLO.Query.YOLOEnvironmentResult))
+                        || failedStepNames.Contains(nameof(Query.ModelPath))
                         || failedStepNames.Contains(nameof(DiGi.GIS.IO.Classes.YearBuiltPredictorReadiness));
                     return (int)(preflightFailed ? YearBuiltPredictionExitCode.Environment : YearBuiltPredictionExitCode.Failed);
                 }

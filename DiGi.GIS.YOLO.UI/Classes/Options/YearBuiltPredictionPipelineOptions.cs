@@ -106,11 +106,12 @@ namespace DiGi.GIS.YOLO.UI.Classes
         public int MaxConcurrentRequests { get; set; } = 8;
 
         /// <summary>
-        /// Gets or sets the path of the trained weights the detector scores with.
-        /// <para>Left null the script falls back to its own search, which picks whichever training run is newest on disk. Name the file, so a run is reproducible.</para>
+        /// Gets or sets the path of the trained weights the detector scores with, resolved against the runner by <see cref="Query.ModelPath(string?)"/>.
+        /// <para>The default is where the deployment puts them: <c>CopyUserFiles</c> flattens the git-ignored <c>user files</c> folder into the runner's output, and the resolver strips that segment, so the same value names the weights in a workspace checkout and beside a deployed executable. Every committed options template carries it too.</para>
+        /// <para><b>Null is not a fallback search.</b> A run whose weights are not a file that exists is refused outright, so a null path is a county that exports its imagery and then fails - which is what a defaulted path is here to prevent. A caller that means to score with different weights names them.</para>
         /// </summary>
         [JsonInclude, JsonPropertyName(nameof(ModelPath))]
-        public string? ModelPath { get; set; } = null;
+        public string? ModelPath { get; set; } = "user files/YOLO/models/model.pt";
 
         /// <summary>
         /// Gets or sets the path of the CPython interpreter that runs the prediction script, or the name of one on PATH.

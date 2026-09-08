@@ -165,9 +165,11 @@ public int MaxConcurrentRequests { get; set; }
 
 ## YearBuiltPredictionPipelineOptions\.ModelPath Property
 
-Gets or sets the path of the trained weights the detector scores with\.
+Gets or sets the path of the trained weights the detector scores with, resolved against the runner by [ModelPath\(string\)](DiGi.GIS.YOLO.UI.md#DiGi.GIS.YOLO.UI.Query.ModelPath(string) 'DiGi\.GIS\.YOLO\.UI\.Query\.ModelPath\(string\)')\.
 
-Left null the script falls back to its own search, which picks whichever training run is newest on disk. Name the file, so a run is reproducible.
+The default is where the deployment puts them: `CopyUserFiles` flattens the git-ignored `user files` folder into the runner's output, and the resolver strips that segment, so the same value names the weights in a workspace checkout and beside a deployed executable. Every committed options template carries it too.
+
+<b>Null is not a fallback search.</b> A run whose weights are not a file that exists is refused outright, so a null path is a county that exports its imagery and then fails - which is what a defaulted path is here to prevent. A caller that means to score with different weights names them.
 
 ```csharp
 public string? ModelPath { get; set; }
