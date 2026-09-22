@@ -591,7 +591,7 @@ namespace DiGi.GIS.YOLO.UI
                             // Built from the same merged year built data the history write uses, so the column
                             // and the history cannot end up saying different things.
                             Table table_PredictedYearBuilt = new();
-                            DiGi.GIS.IO.Modify.Update_Building2D_PredictedYearBuilt(table_PredictedYearBuilt, countyId, yearBuiltDatas_Batch);
+                            DiGi.GIS.IO.Modify.Update_Building2D_YearBuilt(table_PredictedYearBuilt, countyId, yearBuiltDatas_Batch);
 
                             if (table_PredictedYearBuilt.RowCount != 0)
                             {

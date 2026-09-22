@@ -300,9 +300,9 @@ public bool UpdateDetections { get; set; }
 
 ## YearBuiltPredictionPipelineOptions\.UpdatePredictedYearBuilt Property
 
-Gets or sets whether the latest predicted construction year is written into the building data column\.
+Gets or sets whether the three year built columns \- predicted, user and calculated \- are written into the building data\.
 
-Written from the same merged year built data the history step builds, so the column and the history cannot disagree.
+Written from the same merged year built data the history step builds, so the columns and the history cannot disagree.
 
 ```csharp
 public bool UpdatePredictedYearBuilt { get; set; }

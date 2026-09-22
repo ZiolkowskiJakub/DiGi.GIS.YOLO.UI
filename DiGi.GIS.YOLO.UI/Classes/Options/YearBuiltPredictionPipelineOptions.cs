@@ -162,8 +162,8 @@ namespace DiGi.GIS.YOLO.UI.Classes
         public bool UpdateDetections { get; set; } = false;
 
         /// <summary>
-        /// Gets or sets whether the latest predicted construction year is written into the building data column.
-        /// <para>Written from the same merged year built data the history step builds, so the column and the history cannot disagree.</para>
+        /// Gets or sets whether the three year built columns - predicted, user and calculated - are written into the building data.
+        /// <para>Written from the same merged year built data the history step builds, so the columns and the history cannot disagree.</para>
         /// </summary>
         [JsonInclude, JsonPropertyName(nameof(UpdatePredictedYearBuilt))]
         public bool UpdatePredictedYearBuilt { get; set; } = false;
