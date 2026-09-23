@@ -199,7 +199,7 @@ public string? PythonPath { get; set; }
 
 Gets or sets the radiuses the radial ratio features cover, in metres\.
 
-Carried for the same reason as [Years](DiGi.GIS.YOLO.UI.Classes.md#DiGi.GIS.YOLO.UI.Classes.YearBuiltPredictionPipelineOptions.Years 'DiGi\.GIS\.YOLO\.UI\.Classes\.YearBuiltPredictionPipelineOptions\.Years'): it decides which columns the feature projection asks for, and a projection that disagrees with the range the regressor was trained on hands the model defaults rather than features - which scores without failing. Null means the same default the column list itself applies.
+Carried for the same reason as [Years](DiGi.GIS.YOLO.UI.Classes.md#DiGi.GIS.YOLO.UI.Classes.YearBuiltPredictionPipelineOptions.Years 'DiGi\.GIS\.YOLO\.UI\.Classes\.YearBuiltPredictionPipelineOptions\.Years'): it decides which columns the feature projection asks for, and is checked against the predictor's stated contract before a run - narrower is refused, wider warns. Null means the same default the column list itself applies.
 
 ```csharp
 public System.Collections.Generic.List<double>? Radiuses { get; set; }
@@ -347,7 +347,7 @@ public string? WorkingDirectory { get; set; }
 
 Gets or sets the range of years the detection and temporal features cover\.
 
-Has to match the range the regressor was trained on, because it decides which columns the feature projection asks for. Null means the same default the column list itself applies.
+Decides which columns the feature projection asks for, and is checked against the predictor's stated contract before a run: narrower than the model is refused, wider only adds features the model ignores. Null means the same default the column list itself applies.
 
 ```csharp
 public DiGi.Core.Classes.Range<int>? Years { get; set; }

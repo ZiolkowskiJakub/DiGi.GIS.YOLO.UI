@@ -184,14 +184,14 @@ namespace DiGi.GIS.YOLO.UI.Classes
 
         /// <summary>
         /// Gets or sets the range of years the detection and temporal features cover.
-        /// <para>Has to match the range the regressor was trained on, because it decides which columns the feature projection asks for. Null means the same default the column list itself applies.</para>
+        /// <para>Decides which columns the feature projection asks for, and is checked against the predictor's stated contract before a run: narrower than the model is refused, wider only adds features the model ignores. Null means the same default the column list itself applies.</para>
         /// </summary>
         [JsonInclude, JsonPropertyName(nameof(Years))]
         public Range<int>? Years { get; set; } = null;
 
         /// <summary>
         /// Gets or sets the radiuses the radial ratio features cover, in metres.
-        /// <para>Carried for the same reason as <see cref="Years"/>: it decides which columns the feature projection asks for, and a projection that disagrees with the range the regressor was trained on hands the model defaults rather than features - which scores without failing. Null means the same default the column list itself applies.</para>
+        /// <para>Carried for the same reason as <see cref="Years"/>: it decides which columns the feature projection asks for, and is checked against the predictor's stated contract before a run - narrower is refused, wider warns. Null means the same default the column list itself applies.</para>
         /// </summary>
         [JsonInclude, JsonPropertyName(nameof(Radiuses))]
         public List<double>? Radiuses { get; set; } = null;

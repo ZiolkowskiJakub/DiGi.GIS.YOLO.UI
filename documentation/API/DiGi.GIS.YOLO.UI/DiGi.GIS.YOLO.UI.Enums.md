@@ -28,7 +28,7 @@ The pipeline ran and every step it was asked for completed\.
 
 `Configuration` 1
 
-The options could not be loaded, or they name no county or no scratch directory\. Nothing was attempted\.
+The options could not be loaded, name no county or no scratch directory, or narrow the feature projection the model was trained on\. Nothing was attempted\.
 
 <a name='DiGi.GIS.YOLO.UI.Enums.YearBuiltPredictionExitCode.Environment'></a>
 

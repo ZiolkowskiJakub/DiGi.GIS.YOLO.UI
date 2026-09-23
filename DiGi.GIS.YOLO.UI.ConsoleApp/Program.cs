@@ -166,7 +166,13 @@ namespace DiGi.GIS.YOLO.UI.ConsoleApp
 
                     // The preflights keep their own exit code: a machine that cannot run the detector at all, or
                     // score with the model it was given, is a different thing to fix than a step that failed while
-                    // running.
+                    // running. The feature-contract refusal is a mistake in the options file, not in the machine, so
+                    // it is a Configuration rather than an Environment.
+                    if (failedStepNames.Contains(nameof(DiGi.GIS.IO.Query.YearBuiltPredictionInputColumnNames)))
+                    {
+                        return (int)YearBuiltPredictionExitCode.Configuration;
+                    }
+
                     bool preflightFailed = failedStepNames.Contains(nameof(DiGi.YOLO.Query.YOLOEnvironmentResult))
                         || failedStepNames.Contains(nameof(Query.ModelPath))
                         || failedStepNames.Contains(nameof(DiGi.GIS.IO.Classes.YearBuiltPredictorReadiness));

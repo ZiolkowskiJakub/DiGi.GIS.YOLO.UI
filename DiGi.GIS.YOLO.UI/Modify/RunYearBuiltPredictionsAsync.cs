@@ -25,6 +25,7 @@ namespace DiGi.GIS.YOLO.UI
         /// <para>Each step carries its own flag, so a run can be resumed without repeating the expensive ones, and the three write steps are off by default, so a first pass over a county reads and scores but stores nothing unless a write step is named on. Each step is idempotent: the scratch paths are derived from the county identifier, the detector overwrites its results file rather than appending to it, and a stored year built datum is read back and added to rather than replaced.</para>
         /// <para>Only a building the detector fired on at least once is scored. A building it never fired on carries no per-year confidence series, which is the feature the regressor was built around, so scoring it would be scoring a row of absent features. The consequence is that the run predicts a year for fewer buildings than the file based workflow it replaces, which scored every row of its table - worth knowing before comparing the two reference by reference.</para>
         /// <para>The scope is checked before any of it starts. A county identifier that is in no county row - most often a four character county code passed where an identifier was wanted - matches no stored building, so every step reports a legitimate zero and the run ends green having done nothing at all. That is a mis-scoped run rather than an empty county, so it fails here instead.</para>
+        /// <para>The options are checked against the model before any county is read. Narrowing them - asking for fewer years or radiuses than the model was trained on - drops features the model was fitted on, so every prediction silently degrades and it is refused. Widening them only adds features the model ignores, so it warns.</para>
         /// <para>The scratch folder of a county that came through without a failed step is removed once the run has finished with it, unless <see cref="YearBuiltPredictionPipelineOptions.CleanScratchDirectory"/> says otherwise - so nothing downstream can depend on what a successful county left behind, which is the gap the two pass workflow used to carry. A county that failed keeps its folder, so re-running it costs seconds rather than repeating the export and the inference.</para>
         /// <para>A county that fails is logged and stepped over, so one unreachable county cannot cost the run the counties behind it. The result therefore comes back either way - <see cref="YearBuiltPredictionResult.FailedStepNames"/> is what says whether the run did everything it set out to do.</para>
         /// </summary>
@@ -220,6 +221,60 @@ namespace DiGi.GIS.YOLO.UI
                     Serilog.Modify.Log(Serilog.Enums.LogEventLevel.Error, "{Method}: this machine cannot score the buildings - {Messages}", nameof(RunYearBuiltPredictionsAsync), string.Join("; ", yearBuiltPredictorReadiness.Messages));
 
                     return Result();
+                }
+
+                // The options decide which features reach the regressor, and nothing else checks that they agree with the
+                // model. Narrowing them is the silent case - the projection drops the columns the model was fitted on, the
+                // read still succeeds, and every prediction scores from a distribution it was never shown - so it is refused
+                // the way an unresolvable county is. Widening is harmless - the surplus is ignored - so it only warns.
+                // Gated on the predictor stating a contract: one that states none keeps the old behaviour, so stubs and
+                // third-party predictors are unchanged.
+                if (yearBuiltPredictorReadiness.Years is not null || yearBuiltPredictorReadiness.Radiuses is not null)
+                {
+                    string Contract_Text(DiGi.Core.Classes.Range<int>? years, IEnumerable<double>? radiuses)
+                    {
+                        string years_Text = "the default year range";
+                        if (years is not null)
+                        {
+                            years_Text = string.Format(System.Globalization.CultureInfo.InvariantCulture, "years {0}..{1}", years.Min, years.Max);
+                        }
+
+                        string radiuses_Text = "the default radiuses";
+                        if (radiuses is not null)
+                        {
+                            radiuses_Text = string.Format(System.Globalization.CultureInfo.InvariantCulture, "radiuses {0}", string.Join(", ", radiuses.Select(x => x.ToString(System.Globalization.CultureInfo.InvariantCulture))));
+                        }
+
+                        return string.Format("{0} and {1}", years_Text, radiuses_Text);
+                    }
+
+                    HashSet<string> names_Model = DiGi.GIS.IO.Query.YearBuiltPredictionInputColumnNames(yearBuiltPredictorReadiness.Years, yearBuiltPredictorReadiness.Radiuses);
+                    HashSet<string> names_Options = DiGi.GIS.IO.Query.YearBuiltPredictionInputColumnNames(yearBuiltPredictionPipelineOptions.Years, yearBuiltPredictionPipelineOptions.Radiuses);
+
+                    List<string> missing = [.. names_Model.Except(names_Options).OrderBy(x => x)];
+                    List<string> surplus = [.. names_Options.Except(names_Model).OrderBy(x => x)];
+
+                    // The surplus is reported first and always, so a mixed run - wider on one end, narrower on the other - tells the operator both directions before it refuses on the narrowing.
+                    if (surplus.Count != 0)
+                    {
+                        string message = string.Format(System.Globalization.CultureInfo.InvariantCulture, "The options name {0}; the model was trained on {1}. {2} projected feature(s) the model does not use are ignored - {3}.", Contract_Text(yearBuiltPredictionPipelineOptions.Years, yearBuiltPredictionPipelineOptions.Radiuses), Contract_Text(yearBuiltPredictorReadiness.Years, yearBuiltPredictorReadiness.Radiuses), surplus.Count, string.Join(", ", surplus.Take(5)));
+
+                        messages.Add(message);
+
+                        Serilog.Modify.Log(Serilog.Enums.LogEventLevel.Warning, "{Method}: the options widen the projection - {Surplus} surplus feature(s) are ignored", nameof(RunYearBuiltPredictionsAsync), surplus.Count);
+                    }
+
+                    if (missing.Count != 0)
+                    {
+                        string message = string.Format(System.Globalization.CultureInfo.InvariantCulture, "The options name {0}; the model was trained on {1}. {2} of the model's {3} features are not projected - {4} - so every prediction would be scored from a distribution it was never fitted on. Widen the options to the model's range before scoring.", Contract_Text(yearBuiltPredictionPipelineOptions.Years, yearBuiltPredictionPipelineOptions.Radiuses), Contract_Text(yearBuiltPredictorReadiness.Years, yearBuiltPredictorReadiness.Radiuses), missing.Count, names_Model.Count, string.Join(", ", missing.Take(5)));
+
+                        messages.Add(message);
+                        failedStepNames.Add(nameof(DiGi.GIS.IO.Query.YearBuiltPredictionInputColumnNames));
+
+                        Serilog.Modify.Log(Serilog.Enums.LogEventLevel.Error, "{Method}: the options narrow the projection the model was trained on - {Missing} of {Total} features are missing", nameof(RunYearBuiltPredictionsAsync), missing.Count, names_Model.Count);
+
+                        return Result();
+                    }
                 }
             }
 

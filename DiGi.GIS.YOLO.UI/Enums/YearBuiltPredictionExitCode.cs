@@ -16,7 +16,7 @@ namespace DiGi.GIS.YOLO.UI.Enums
         [Description("Pipeline executed successfully")] Succeeded = 0,
 
         /// <summary>
-        /// The options could not be loaded, or they name no county or no scratch directory. Nothing was attempted.
+        /// The options could not be loaded, name no county or no scratch directory, or narrow the feature projection the model was trained on. Nothing was attempted.
         /// </summary>
         [Description("Configuration or argument validation error")] Configuration = 1,
 
