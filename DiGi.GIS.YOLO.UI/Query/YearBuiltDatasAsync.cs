@@ -3,7 +3,6 @@ using DiGi.GIS.WebAPI.Classes;
 using DiGi.WebAPI.Classes;
 using System;
 using System.Collections.Generic;
-using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -44,19 +43,6 @@ namespace DiGi.GIS.YOLO.UI
                 return result;
             }
 
-            HttpClient? httpClient = null;
-            string? path = null;
-
-            if (readStored)
-            {
-                httpClient = gisWebAPIManager.CreateHttpClient<YearBuiltDataController>(nameof(YearBuiltDataController.GetItemsByReferencesAsync), out path);
-                if (httpClient is null || string.IsNullOrWhiteSpace(path))
-                {
-                    Serilog.Modify.Log(Serilog.Enums.LogEventLevel.Error, "HttpClient or path for {Method} could not be resolved", nameof(YearBuiltDataController.GetItemsByReferencesAsync));
-                    return result;
-                }
-            }
-
             // The predicted year is stored as a short while the model and the column speak in ushort, so the
             // caller has already narrowed it; nothing here can widen it back.
             DateTime dateTime = runTimestamp.UtcDateTime;
@@ -65,76 +51,33 @@ namespace DiGi.GIS.YOLO.UI
 
             if (readStored)
             {
-                // The endpoint refuses more than its cap in one request, so a larger page would fail the whole
-                // county rather than just being slower.
-                referenceBatchSize = referenceBatchSize < 1 ? 1 : Math.Min(referenceBatchSize, Constants.Count.YearBuiltDataReference_Maximum);
+                // A page is the unit that succeeds or fails. Its buildings are skipped rather than answered with a
+                // fresh datum - that would store a second row alongside the one that could not be read - so they
+                // carry no prediction this run, and a re-run merges them.
+                HashSet<string> references_Failed = new(StringComparer.Ordinal);
 
-                PostOptions postOptions_Temp = postOptions ?? new PostOptions() { RequestResult = true };
-
-                // Sent explicitly, not left to the server default: the read the bulk one replaces asked with
-                // it on, and the bulk endpoint defaults it off. An omitted parameter is not a binding failure
-                // - it keeps the default - and without the flag a stored row filed under a sibling polygon
-                // part is no longer read back, which is what strands a duplicate.
-                string requestUri = new UrlBuilder(path!).AddParameter("countyid", countyId).AddParameter("fallbackbyreference", true).ToString();
-
-                for (int i = 0; i < references.Count; i += referenceBatchSize)
+                Dictionary<string, List<YearBuiltData>>? yearBuiltDatas_ByReference = await StoredYearBuiltDatasAsync(gisWebAPIManager, countyId, references, referenceBatchSize, references_Failed, postOptions, cancellationToken);
+                if (yearBuiltDatas_ByReference is null)
                 {
-                    cancellationToken.ThrowIfCancellationRequested();
+                    return result;
+                }
 
-                    List<string> references_Page = references.GetRange(i, Math.Min(referenceBatchSize, references.Count - i));
-
-                    List<YearBuiltData>? yearBuiltDatas_Stored = null;
-                    try
+                foreach (string reference in references)
+                {
+                    if (references_Failed.Contains(reference))
                     {
-                        // Passed as a factory, not an instance: sending consumes and disposes the content, so
-                        // a retry of the page has to rebuild the body rather than resend an already-drained stream.
-                        PostResponse<List<YearBuiltData>?> postResponse = await DiGi.WebAPI.Modify.PostAsync<List<YearBuiltData>>(httpClient!, requestUri, () => GIS.WebAPI.Create.HttpContent(references_Page, cancellationToken), postOptions_Temp);
-
-                        if (postResponse is null || !postResponse.Succeeded)
-                        {
-                            throw new Exception("The bulk read did not succeed");
-                        }
-
-                        yearBuiltDatas_Stored = postResponse.Result;
-                    }
-                    catch (Exception exception) when (!cancellationToken.IsCancellationRequested)
-                    {
-                        // A page is the unit that succeeds or fails. Its buildings are skipped rather than
-                        // answered with a fresh datum - that would store a second row alongside the one that
-                        // could not be read - so they carry no prediction this run, and a re-run merges them.
-                        Serilog.Modify.Log(exception, "The stored year built data could not be read for county {CountyId} over {Count} references - the page is skipped", countyId, references_Page.Count);
                         continue;
                     }
 
                     // A reference can carry several stored rows; the first is the one the read returned first,
                     // as the singular read took it.
-                    Dictionary<string, YearBuiltData> yearBuiltDatas_ByReference = [];
-                    if (yearBuiltDatas_Stored is not null)
+                    YearBuiltData yearBuiltData = yearBuiltDatas_ByReference.TryGetValue(reference, out List<YearBuiltData>? yearBuiltDatas_Stored) && yearBuiltDatas_Stored is not null && yearBuiltDatas_Stored.Count != 0
+                        ? yearBuiltDatas_Stored[0]
+                        : new YearBuiltData(reference);
+
+                    if (yearBuiltData.SetPredictedYearBuilt(dateTime, years[reference]))
                     {
-                        foreach (YearBuiltData yearBuiltData_Stored in yearBuiltDatas_Stored)
-                        {
-                            string? reference_Stored = yearBuiltData_Stored.Reference;
-                            if (string.IsNullOrWhiteSpace(reference_Stored) || yearBuiltDatas_ByReference.ContainsKey(reference_Stored))
-                            {
-                                continue;
-                            }
-
-                            yearBuiltDatas_ByReference[reference_Stored] = yearBuiltData_Stored;
-                        }
-                    }
-
-                    for (int j = 0; j < references_Page.Count; j++)
-                    {
-                        string reference = references_Page[j];
-
-                        YearBuiltData yearBuiltData = yearBuiltDatas_ByReference.TryGetValue(reference, out YearBuiltData? yearBuiltData_Stored)
-                            ? yearBuiltData_Stored!
-                            : new YearBuiltData(reference);
-
-                        if (yearBuiltData.SetPredictedYearBuilt(dateTime, years[reference]))
-                        {
-                            result.Add(yearBuiltData);
-                        }
+                        result.Add(yearBuiltData);
                     }
                 }
             }

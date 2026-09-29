@@ -141,9 +141,19 @@ namespace DiGi.GIS.YOLO.UI
             PostOptions postOptions_Item = new() { RequestResult = true };
             PostOptions postOptions_Bulk = new() { RequestResult = true, Delay = TimeSpan.FromSeconds(60) };
 
+            // The identity of the weights, hashed once: stored detections carry only the run stamp, so the log line is what
+            // ties a run to the detector that produced it - a file name says nothing once model.pt is replaced in place.
+            string? modelPath_Run = yearBuiltPredictionPipelineOptions.RunPrediction ? Query.ModelPath(yearBuiltPredictionPipelineOptions.ModelPath) : null;
+            string? modelSHA256 = DiGi.YOLO.Query.FileSHA256(modelPath_Run);
+
             Serilog.Modify.Log(
-                "{Method} started: {CountyCount} counties, scratch {ScratchDirectory}, export {ExportImages}, predict {RunPrediction}, score {Score}, write detections {UpdateDetections}, write year built data {UpdateYearBuiltData}, write predicted year {UpdatePredictedYearBuilt}",
-                nameof(RunYearBuiltPredictionsAsync), countyIds.Count, scratchDirectory, yearBuiltPredictionPipelineOptions.ExportImages, yearBuiltPredictionPipelineOptions.RunPrediction, yearBuiltPredictionPipelineOptions.Score, yearBuiltPredictionPipelineOptions.UpdateDetections, yearBuiltPredictionPipelineOptions.UpdateYearBuiltData, yearBuiltPredictionPipelineOptions.UpdatePredictedYearBuilt);
+                "{Method} started: {CountyCount} counties, scratch {ScratchDirectory}, export {ExportImages}, predict {RunPrediction}, score {Score}, write detections {UpdateDetections}, write year built data {UpdateYearBuiltData}, write predicted year {UpdatePredictedYearBuilt}, model {ModelPath} SHA-256 {ModelSHA256}",
+                nameof(RunYearBuiltPredictionsAsync), countyIds.Count, scratchDirectory, yearBuiltPredictionPipelineOptions.ExportImages, yearBuiltPredictionPipelineOptions.RunPrediction, yearBuiltPredictionPipelineOptions.Score, yearBuiltPredictionPipelineOptions.UpdateDetections, yearBuiltPredictionPipelineOptions.UpdateYearBuiltData, yearBuiltPredictionPipelineOptions.UpdatePredictedYearBuilt, modelPath_Run ?? string.Empty, modelSHA256 ?? string.Empty);
+
+            if (modelSHA256 is not null)
+            {
+                messages.Add(string.Format(System.Globalization.CultureInfo.InvariantCulture, "Model SHA-256: {0} ({1})", modelSHA256, modelPath_Run));
+            }
 
             //The write steps are off by default, so reaching this point with one on is a deliberate choice, and the
             //consequence - writing the deployed building and year built data - is stated up front the way an
@@ -200,6 +210,18 @@ namespace DiGi.GIS.YOLO.UI
                     failedStepNames.Add(nameof(Query.ModelPath));
 
                     Serilog.Modify.Log(Serilog.Enums.LogEventLevel.Error, "{Method}: the detector weights were not found - {ModelPath}", nameof(RunYearBuiltPredictionsAsync), modelPath_Named);
+
+                    return Result();
+                }
+
+                // Refused rather than run anonymously: weights that exist but cannot be hashed would leave the run with no
+                // record of which detector wrote its detections.
+                if (modelSHA256 is null)
+                {
+                    messages.Add(string.Format("The detector weights could not be read to identify them - {0}", modelPath_Preflight));
+                    failedStepNames.Add(nameof(Query.ModelPath));
+
+                    Serilog.Modify.Log(Serilog.Enums.LogEventLevel.Error, "{Method}: the detector weights could not be hashed - {ModelPath}", nameof(RunYearBuiltPredictionsAsync), modelPath_Preflight ?? string.Empty);
 
                     return Result();
                 }

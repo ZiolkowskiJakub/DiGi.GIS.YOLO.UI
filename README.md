@@ -24,16 +24,17 @@ The orchestrator was first built in `DiGi.GIS.PostgreSQL.UI` and moved here on 2
 
 ### Why `net10.0-windows7.0`
 
-`Modify.ExportPredictionImagesAsync` decodes and re-encodes the stored orthophoto bytes through `System.Drawing.Image`, which is Windows-only from .NET 7 onward. That fixes the target framework, and `NoWarn;CA1416` plus `[SupportedOSPlatform("windows")]` follow from it. The runner cannot be hosted on Linux until that re-encode moves off `System.Drawing` — and it cannot simply be replaced, because the detector's weights are frozen and the export has to stay byte-identical to the one they were trained against.
+`Modify.SavePredictionImage` - the one encoder the inference export and the training dataset builder share - decodes and re-encodes the stored orthophoto bytes through `System.Drawing.Image`, which is Windows-only from .NET 7 onward. That fixes the target framework, and `NoWarn;CA1416` plus `[SupportedOSPlatform("windows")]` follow from it. The runner cannot be hosted on Linux until that re-encode moves off `System.Drawing` — and it cannot simply be replaced, because the detector's weights are frozen and the export has to stay byte-identical to the one they were trained against.
 
 ### Configuration
 
-Two files, both resolved by `Query.ConfigurationFilePath` against the application output. `CopyUserFiles` runs after `CopyFiles`, so anything in the git-ignored `user files` folder overwrites the committed default of the same name.
+Three files, all resolved by `Query.ConfigurationFilePath` against the application output. `CopyUserFiles` runs after `CopyFiles`, so anything in the git-ignored `user files` folder overwrites the committed default of the same name.
 
 | File | Committed | Purpose |
 |---|---|---|
 | `files/GIS_WebAPI_Client.conf` | yes, with `Key=""` | The deny-by-default placeholder. The real key goes in `user files/GIS_WebAPI_Client.conf` and is never committed. |
 | `files/YearBuiltPredictionPipelineOptions.json` | yes | The option set, with every write step off and no county named. Copy it to `user files/YearBuiltPredictionPipelineOptions.json` and edit that. |
+| `files/YOLOTrainingDatasetOptions.json` | yes | The training dataset option set (`--dataset`, `--check-labels`, `--evaluate-detector`), with no county, no output directory and `CountOnly` on. Copy it to `user files/YOLOTrainingDatasetOptions.json` and edit that. |
 
 **`CountyIds` are county row identifiers, never county codes.** A code is the four character territorial value (`"2212"`); an identifier is a database row running into six figures, and a county whose territory is in several pieces has **one identifier per piece** — name every one of them, so each written row is filed under the part its reference belongs to. Code `2212` (słupski) is identifiers `73482` and `73485`. Getting this wrong used to produce a green run that exported nothing, detected nothing and scored nothing; `Query.UnknownCountyIds` now stops the run and says which identifiers were meant.
 
@@ -49,6 +50,125 @@ Every write step is off in the template on purpose: the pipeline writes deployed
 | 3 | No Web API authorization key was found. |
 | 4 | A step failed while running. |
 | 5 | The run was cancelled. |
+
+Each run logs the **SHA-256 of the detector weights** with its start line and adds it to `YearBuiltPredictionResult.Messages` (`Model SHA-256: …`). Stored detections carry only the run stamp, so this line is what ties a run to the detector that wrote it once `model.pt` has been replaced in place. Weights that exist but cannot be read to hash them are refused (exit code 2).
+
+## The YOLO training dataset
+
+Part of [#12](https://github.com/ZiolkowskiJakub/DiGi.GIS.YOLO.UI/issues/12), built in [#13](https://github.com/ZiolkowskiJakub/DiGi.GIS.YOLO.UI/issues/13). The `train8` dataset is lost, so the detector's training set is **rebuilt from the deployed database** through `api.digiproject.uk`. Three console modes share one options file, `YOLOTrainingDatasetOptions.json`:
+
+| Mode | Entry point | What it does |
+|---|---|---|
+| `--dataset [options.json]` | `Modify.AppendYOLOTrainingDatasetAsync` | With `CountOnly` it counts: labelled buildings, the split, the Legacy agreement table, bounded entries, cross-part duplicates and a size estimate. It requests no orthophoto and writes nothing. Without `CountOnly` it builds a fresh dataset into `OutputDirectory`, and the build can be resumed. |
+| `--check-labels [options.json]` | `Modify.CheckYOLOTrainingDatasetLabels` | Runs `ModelPath` (the current detector) over a seeded sample of positive Train/Validate images. Reports the IoU of each label box with the best detection (mean, median, share ≥ 0.5, per county) and writes overlays to `ReportsDirectory/label_check`. |
+| `--evaluate-detector [options.json]` | `Modify.EvaluateYOLODetectors` | Runs every file in `WeightsPaths` over the same Test images. Scores each first detection year against its label (MAE, RMSE, exact share) for all Test buildings and for the **clean** subset (Test ∧ ¬Legacy). Prints one row per weights file per subset. Nothing is written to the API. |
+
+Run them in this order: `--dataset` with `CountOnly` (post the output on #12), then `--dataset`, then `--check-labels` (stop on a low IoU), then train, then `--evaluate-detector`.
+
+**Precondition:** the Year Built building-data update has run since the last user edits. The labels are read from the `User year built` column that update writes.
+
+### Data sources
+
+| Data | Table | Read with |
+|---|---|---|
+| Label | `building_data` column `User year built` | `Query.UserYearBuiltsAsync`: paged by reference, then `DiGi.GIS.IO.Query.YearBuiltLabels` (most frequent exact user year, the regressor's rule). A page that fails fails the whole county part. |
+| History, Test buildings only | `year_built_data` | `Query.StoredYearBuiltDatasAsync` with `fallbackbyreference=true`. It returns every row per reference and the references of pages that failed. |
+| Footprint | `building_2d` | `Query.Building2DsAsync`: sent with the county first, then misses are retried without it (server fallback by reference). |
+| Orthophotos | `orto_datas` | `Query.OrtoDatasAsync`: same fallback as the footprints. |
+| Cross-part duplicates | `building_2d` | `Query.ReferenceDuplicatesAsync`. The endpoint is global, so `CountOnly` filters the rows to the named parts. |
+
+### Labelling rule
+
+- **Eligible:** only references with a label. A reference found under several named county parts is built once, under the lowest identifier. Conflicting labels are counted.
+- **Split:**
+  - A reference that `DiGi.GIS.IO.Query.Holdout(reference, HoldoutDenominator)` holds out goes to **Test only**. These are the same buildings the regressor holds out.
+  - The remaining references are sorted ordinally. A seeded `Random(Seed)` then puts a `ValidateWeight` share of them in Validate and the rest in Train.
+- **Images:** one per orthophoto year, the first of each year in date order. Each is saved by `Modify.SavePredictionImage`, the encoder the inference export uses, as `{reference}_{year}.jpeg` with an invariant-culture year.
+- **Positive** (`year >= label`): one box of class `Building` (index 0). The box is the footprint's bounding box (a clone) grown by `Offset` metres, projected with `OrtoData.ToOrto`, and **clamped to the image** (`Query.PixelBoundingBox`). It is normalised by the saved image's **pixel** size. If the box has no area inside the image, the image is not written.
+- **Negative** (`year < label`): the image is registered with an empty label file.
+- **Duplicates:**
+  - Identical photo bytes under two years with **conflicting** labels are both dropped.
+  - Identical bytes with **agreeing** labels are kept once, at the earliest year.
+  - Everything dropped or merged is counted.
+
+### The `Legacy` rule
+
+`train8` saw an unknown set of buildings. A Test building is **Legacy** when either of two records places it there (`Query.LegacySource`):
+
+- the list in `LegacyReferencesFilePath` names it. This is `DiGi.GIS.ML/Data/Data_2025.05.27.tsv`; copy it into `user files/`.
+- any user entry of any stored row is undated, or dated before `LegacyCutoff` (`2025-05-23T00:00:00Z`, `train8`'s save date).
+
+The two are combined as a union, so doubt removes a building from the clean subset rather than adding one.
+
+The manifest records the result in `LegacySource`: `tsv`, `timestamp`, `both`, empty (clean), or `unknown`. `unknown` means the county part's history could not be read in full; those buildings count as Legacy, never clean, and the step is reported as failed. Train and Validate buildings carry only the list part, because their Legacy flag feeds no metric.
+
+### Output and resume
+
+The dataset's layout:
+
+- `conf.yaml`: an absolute `path:` and `names: 0: Building`.
+- `images/{train,val,test}` and `labels/{train,val,test}`.
+- `dataset_references.tsv`, the **manifest**, with columns `Reference, CountyId, Category, Label, Legacy, LegacySource`.
+
+The manifest is also the resume journal:
+
+- A building's images and label files are written first, and its row is appended after them.
+- A building the manifest names is complete, and a resumed run skips it.
+- The files of a building it does not name (left half-written by a stopped run, matched by the reference before the last `_`) are removed and rebuilt.
+- A building with no footprint or no imagery is not journaled, so a later run looks for it again.
+
+The build refuses:
+
+- a non-empty `OutputDirectory` that is not a dataset it started;
+- an existing dataset when `Resume` is off.
+
+### Options — `YOLOTrainingDatasetOptions`
+
+| Member | Default | Used by |
+|---|---|---|
+| `CountyIds` | none — required | `--dataset` |
+| `OutputDirectory` | none — required, absolute | all |
+| `CountOnly` | `false` (the committed template: `true`) | `--dataset` |
+| `Resume` | `true` | `--dataset` |
+| `LegacyReferencesFilePath` | `user files/Data_2025.05.27.tsv` | `--dataset` |
+| `LegacyCutoff` | `2025-05-23T00:00:00Z` | `--dataset` |
+| `Offset` | `1` (metres) | `--dataset` |
+| `ValidateWeight` | `0.1` | `--dataset` |
+| `HoldoutDenominator` | `5` (the regressor's) | `--dataset` |
+| `Seed` | `0` | `--dataset`, `--check-labels` |
+| `MaxConcurrentRequests` | `8` | `--dataset` |
+| `ReferenceBatchSize` | `10000` (clamped to the endpoint cap) | `--dataset` |
+| `ReferenceDuplicateLimit` | `100000` | `--dataset` with `CountOnly` |
+| `PythonPath`, `WorkingDirectory` | `null` | `--check-labels`, `--evaluate-detector` |
+| `ModelPath` | `user files/YOLO/models/model.pt` | `--check-labels` |
+| `Confidence` | `0.1` (production) | `--check-labels`, `--evaluate-detector` |
+| `LabelCheckSampleSize` / `LabelCheckOverlayCount` | `500` / `20` | `--check-labels` |
+| `ReportsDirectory` | `user files/reports` | `--check-labels` |
+| `WeightsPaths` | `null` | `--evaluate-detector` |
+| `Years` | `null` (2008–2025) | `--evaluate-detector` |
+
+### Exit codes of the dataset modes
+
+The prediction run's codes, with these meanings:
+
+| Code | `--dataset` | `--check-labels`, `--evaluate-detector` |
+|---|---|---|
+| 0 | completed, no failed step | completed, no failed step |
+| 1 | the options cannot be read, have no absolute `OutputDirectory` or no county, the scope is unknown, the legacy list cannot be read, or the output folder is refused | the options or the dataset (manifest, `conf.yaml`, images) cannot be read, or no weights are named |
+| 2 | — | the weights or the interpreter are missing |
+| 3 | no Web API key | — (these modes read nothing from the API) |
+| 4 | a step failed while running (a county's labels or history, footprints, the final write) | the detector failed |
+| 5 | cancelled; the manifest lets a re-run continue | cancelled |
+
+### Disk and time
+
+`CountOnly` estimates:
+
+- **Requests:** one orthophoto read per building, plus the paged footprint reads.
+- **Images:** 8 per building.
+- **Disk:** about 16 kB per image.
+
+These are rough figures from one sample building, meant to give the order of magnitude. A county of 30 000 labelled buildings is therefore about 30 000 orthophoto requests, 240 000 images and 4 GB. At `MaxConcurrentRequests = 8`, requests are the bottleneck, so measure the first county before scheduling the rest.
 
 ## 💻 Coding Guidelines for Developers & AI Agents
 

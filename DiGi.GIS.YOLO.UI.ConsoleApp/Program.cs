@@ -19,7 +19,7 @@ namespace DiGi.GIS.YOLO.UI.ConsoleApp
         /// <summary>
         /// Executes the headless Year Built prediction pipeline from command-line arguments.
         /// </summary>
-        /// <param name="args">Optional arguments. The first argument specifies the path to the options JSON file.</param>
+        /// <param name="args">Optional arguments. With no flag, the first argument is the path of the prediction options file. A leading <c>--dataset</c>, <c>--check-labels</c> or <c>--evaluate-detector</c> selects a training dataset mode instead, and the argument after it is the path of the <see cref="YOLOTrainingDatasetOptions"/> file.</param>
         /// <returns>One of <see cref="Enums.YearBuiltPredictionExitCode"/> as an integer. Only <see cref="Enums.YearBuiltPredictionExitCode.Succeeded"/> means a run finished; the rest say why one did not, and a caller reads them through that enumeration rather than against literals of its own.</returns>
         public static async Task<int> Main(string[] args)
         {
@@ -36,12 +36,19 @@ namespace DiGi.GIS.YOLO.UI.ConsoleApp
                 return (int)yearBuiltPredictionExitCode;
             }
 
+            // A leading flag selects one of the training dataset modes; no flag keeps the prediction run, so every
+            // caller that passes just an options path - the tray application among them - is unchanged.
+            if (args.Length > 0 && args[0].StartsWith("--", StringComparison.Ordinal))
+            {
+                return await DatasetModeAsync(args[0], args.Length > 1 ? args[1] : null);
+            }
+
             string? path_Options = args.Length > 0 ? args[0] : null;
             YearBuiltPredictionPipelineOptions? options = Query.YearBuiltPredictionPipelineOptions(path_Options);
 
             if (options is null)
             {
-                Console.WriteLine("Usage: DiGi.GIS.YOLO.UI.ConsoleApp [path-to-options.json]");
+                Console.WriteLine(Usage);
                 return Fail($"Year Built prediction pipeline options could not be loaded from {(string.IsNullOrWhiteSpace(path_Options) ? "default location" : path_Options)}.", YearBuiltPredictionExitCode.Configuration);
             }
 
@@ -192,6 +199,271 @@ namespace DiGi.GIS.YOLO.UI.ConsoleApp
                 Console.ResetColor();
 
                 return (int)YearBuiltPredictionExitCode.Succeeded;
+            }
+            finally
+            {
+                Console.CancelKeyPress -= CancelKeyPress;
+                cancellationTokenSource.Dispose();
+            }
+        }
+
+        /// <summary>
+        /// The usage text printed when the arguments or the options cannot be read.
+        /// </summary>
+        private const string Usage = "Usage: DiGi.GIS.YOLO.UI.ConsoleApp [path-to-options.json]\n       DiGi.GIS.YOLO.UI.ConsoleApp --dataset|--check-labels|--evaluate-detector [path-to-YOLOTrainingDatasetOptions.json]";
+
+        /// <summary>
+        /// Runs one of the YOLO training dataset modes: <c>--dataset</c> builds (or, with <see cref="YOLOTrainingDatasetOptions.CountOnly"/>, only counts) a training dataset from the deployed data, <c>--check-labels</c> checks its label boxes against the current detector, and <c>--evaluate-detector</c> compares weights files on its Test buildings.
+        /// <para>The exit codes are the prediction run's: <see cref="YearBuiltPredictionExitCode.Configuration"/> for options that cannot be used, <see cref="YearBuiltPredictionExitCode.Environment"/> for weights or an interpreter the machine does not have, <see cref="YearBuiltPredictionExitCode.Authorization"/> for a missing key (<c>--dataset</c> only - the other two read nothing from the Web API), <see cref="YearBuiltPredictionExitCode.Failed"/> for a step that failed while running, and <see cref="YearBuiltPredictionExitCode.Cancelled"/>.</para>
+        /// </summary>
+        /// <param name="mode">The mode flag.</param>
+        /// <param name="path_Options">The path of the options file, or null for <see cref="Constants.FileName.YOLOTrainingDatasetOptions"/> beside the executable.</param>
+        /// <returns>One of <see cref="YearBuiltPredictionExitCode"/> as an integer.</returns>
+        private static async Task<int> DatasetModeAsync(string mode, string? path_Options)
+        {
+            int Fail(string message, YearBuiltPredictionExitCode yearBuiltPredictionExitCode)
+            {
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.WriteLine($"[ERROR] {message}");
+                Console.ResetColor();
+                Serilog.Modify.Log(Serilog.Enums.LogEventLevel.Error, message);
+                return (int)yearBuiltPredictionExitCode;
+            }
+
+            void Notes(IEnumerable<string>? messages)
+            {
+                if (messages is null)
+                {
+                    return;
+                }
+
+                Console.ForegroundColor = ConsoleColor.Yellow;
+                foreach (string message in messages)
+                {
+                    Console.WriteLine($"[NOTE] {message}");
+                }
+
+                Console.ResetColor();
+            }
+
+            int Failed(List<string> failedStepNames, IEnumerable<string> stepNames_Configuration, IEnumerable<string> stepNames_Environment)
+            {
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.WriteLine($"[ERROR] Completed with {failedStepNames.Count} failed step(s):");
+                foreach (string failedStepName in failedStepNames)
+                {
+                    Console.WriteLine($"  - {failedStepName}");
+                }
+
+                Console.ResetColor();
+
+                if (failedStepNames.Intersect(stepNames_Configuration).Any())
+                {
+                    return (int)YearBuiltPredictionExitCode.Configuration;
+                }
+
+                if (failedStepNames.Intersect(stepNames_Environment).Any())
+                {
+                    return (int)YearBuiltPredictionExitCode.Environment;
+                }
+
+                return (int)YearBuiltPredictionExitCode.Failed;
+            }
+
+            if (mode != "--dataset" && mode != "--check-labels" && mode != "--evaluate-detector")
+            {
+                Console.WriteLine(Usage);
+                return Fail($"Unknown mode '{mode}'.", YearBuiltPredictionExitCode.Configuration);
+            }
+
+            YOLOTrainingDatasetOptions? options = Query.YOLOTrainingDatasetOptions(path_Options);
+            if (options is null)
+            {
+                Console.WriteLine(Usage);
+                return Fail($"YOLO training dataset options could not be loaded from {(string.IsNullOrWhiteSpace(path_Options) ? "default location" : path_Options)}.", YearBuiltPredictionExitCode.Configuration);
+            }
+
+            if (string.IsNullOrWhiteSpace(options.OutputDirectory) || !System.IO.Path.IsPathRooted(options.OutputDirectory))
+            {
+                return Fail("The options must name an absolute OutputDirectory - the dataset root.", YearBuiltPredictionExitCode.Configuration);
+            }
+
+            GISWebAPIManager? gisWebAPIManager = null;
+            if (mode == "--dataset")
+            {
+                if (options.CountyIds is null || !options.CountyIds.Any(x => x > 0))
+                {
+                    return Fail("The options must name at least one positive CountyId.", YearBuiltPredictionExitCode.Configuration);
+                }
+
+                string? key = Query.Key();
+                if (string.IsNullOrWhiteSpace(key))
+                {
+                    return Fail($"WebAPI authorization key not found in '{Constants.FileName.GISWebAPIClientConfigurationFile}'.", YearBuiltPredictionExitCode.Authorization);
+                }
+
+                gisWebAPIManager = WebAPI.Create.GISWebAPIManager(key);
+                if (gisWebAPIManager is null)
+                {
+                    return Fail("Failed to initialize GISWebAPIManager with the provided key.", YearBuiltPredictionExitCode.Authorization);
+                }
+            }
+
+            // Not disposed through a using, for the same reason as the prediction run: the handler outlives the statement.
+            CancellationTokenSource cancellationTokenSource = new();
+
+            void CancelKeyPress(object? sender, ConsoleCancelEventArgs eventArgs)
+            {
+                eventArgs.Cancel = true;
+                Console.ForegroundColor = ConsoleColor.Yellow;
+                Console.WriteLine("[INFO] Cancellation requested by user (Ctrl+C)...");
+                Console.ResetColor();
+                Serilog.Modify.Log(Serilog.Enums.LogEventLevel.Warning, "Cancellation requested by user");
+                cancellationTokenSource.Cancel();
+            }
+
+            Console.CancelKeyPress += CancelKeyPress;
+
+            try
+            {
+                if (mode == "--dataset")
+                {
+                    Progress<long> progress = new(count =>
+                    {
+                        Console.WriteLine(Create.ProgressMessage(count));
+                    });
+
+                    YOLOTrainingDatasetResult? result = await gisWebAPIManager.AppendYOLOTrainingDatasetAsync(options, progress, cancellationTokenSource.Token);
+                    if (result is null)
+                    {
+                        return Fail("The training dataset could not be attempted - see the log.", YearBuiltPredictionExitCode.Configuration);
+                    }
+
+                    Notes(result.Messages);
+
+                    Console.WriteLine(result.CountOnly ? "[INFO] Count only - no orthophoto was requested and nothing was written." : $"[INFO] Dataset: {result.OutputDirectory}");
+                    Console.WriteLine("County\tLabelled\tDuplicates\tConflicts\tBuildings\tTrain\tValidate\tTest\tLegacyTsv\tLegacyTimestamp\tLegacyBoth\tLegacyNone\tLegacyUnknown\tBounded\tRefDuplicates\tEstRequests\tEstImages\tEstBytes\tResumed\tNoFootprint\tNoImagery\tFailed\tImages\tPositive\tNegative\tClamped\tDroppedBoxes\tSameYear\tIdenticalDropped\tIdenticalMerged");
+
+                    List<YOLOTrainingDatasetCount> yOLOTrainingDatasetCounts = result.YOLOTrainingDatasetCounts;
+                    if (result.Total is YOLOTrainingDatasetCount total)
+                    {
+                        yOLOTrainingDatasetCounts.Add(total);
+                    }
+
+                    foreach (YOLOTrainingDatasetCount yOLOTrainingDatasetCount in yOLOTrainingDatasetCounts)
+                    {
+                        Console.WriteLine(string.Join("\t",
+                            yOLOTrainingDatasetCount.CountyId?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "Total",
+                            yOLOTrainingDatasetCount.LabelledCount,
+                            yOLOTrainingDatasetCount.DuplicateReferenceCount,
+                            yOLOTrainingDatasetCount.LabelConflictCount,
+                            yOLOTrainingDatasetCount.BuildingCount,
+                            yOLOTrainingDatasetCount.TrainCount,
+                            yOLOTrainingDatasetCount.ValidateCount,
+                            yOLOTrainingDatasetCount.TestCount,
+                            yOLOTrainingDatasetCount.LegacyTsvCount,
+                            yOLOTrainingDatasetCount.LegacyTimestampCount,
+                            yOLOTrainingDatasetCount.LegacyBothCount,
+                            yOLOTrainingDatasetCount.LegacyNoneCount,
+                            yOLOTrainingDatasetCount.LegacyUnknownCount,
+                            yOLOTrainingDatasetCount.BoundedEntryCount,
+                            yOLOTrainingDatasetCount.ReferenceDuplicateCount,
+                            yOLOTrainingDatasetCount.EstimatedRequestCount,
+                            yOLOTrainingDatasetCount.EstimatedImageCount,
+                            yOLOTrainingDatasetCount.EstimatedByteCount,
+                            yOLOTrainingDatasetCount.ResumedCount,
+                            yOLOTrainingDatasetCount.WithoutFootprintCount,
+                            yOLOTrainingDatasetCount.WithoutImageryCount,
+                            yOLOTrainingDatasetCount.FailedBuildingCount,
+                            yOLOTrainingDatasetCount.ImageCount,
+                            yOLOTrainingDatasetCount.PositiveImageCount,
+                            yOLOTrainingDatasetCount.NegativeImageCount,
+                            yOLOTrainingDatasetCount.ClampedBoxCount,
+                            yOLOTrainingDatasetCount.DroppedBoxCount,
+                            yOLOTrainingDatasetCount.SameYearImageCount,
+                            yOLOTrainingDatasetCount.IdenticalImageDroppedCount,
+                            yOLOTrainingDatasetCount.IdenticalImageMergedCount));
+                    }
+
+                    if (cancellationTokenSource.IsCancellationRequested || result.Cancelled)
+                    {
+                        Console.WriteLine("[INFO] Cancelled - the manifest lets a re-run continue.");
+                        return (int)YearBuiltPredictionExitCode.Cancelled;
+                    }
+
+                    if (result.FailedStepNames is List<string> failedStepNames_Dataset && failedStepNames_Dataset.Count != 0)
+                    {
+                        return Failed(failedStepNames_Dataset, [nameof(Query.UnknownCountyIds), nameof(Query.LegacyReferences), nameof(YOLOTrainingDatasetOptions.OutputDirectory), nameof(YOLOTrainingDatasetOptions.Resume), nameof(Constants.LabelName)], []);
+                    }
+
+                    return (int)YearBuiltPredictionExitCode.Succeeded;
+                }
+
+                List<string> stepNames_Configuration = [nameof(Query.DatasetReferences), nameof(DiGi.YOLO.Modify.Read), nameof(YOLOTrainingDatasetOptions.WeightsPaths), nameof(DiGi.YOLO.Enums.Category.Train), nameof(DiGi.YOLO.Enums.Category.Test)];
+                List<string> stepNames_Environment = [nameof(Query.ModelPath), nameof(DiGi.YOLO.Create.YOLOPredictionOptions)];
+
+                if (mode == "--check-labels")
+                {
+                    YOLOLabelCheckResult? result = options.CheckYOLOTrainingDatasetLabels(cancellationTokenSource.Token);
+                    if (result is null)
+                    {
+                        return Fail("The label check could not be attempted - see the log.", YearBuiltPredictionExitCode.Configuration);
+                    }
+
+                    Notes(result.Messages);
+
+                    Console.WriteLine($"[INFO] Label check over {result.SampleCount} positive image(s), {result.DetectedCount} with a detection:");
+                    Console.WriteLine(string.Format(System.Globalization.CultureInfo.InvariantCulture, "  IoU mean {0:0.000}, median {1:0.000}, share >= 0.5 {2:0.000}", result.MeanIntersectionOverUnion, result.MedianIntersectionOverUnion, result.ShareAboveHalf));
+                    foreach (KeyValuePair<string, double> keyValuePair in result.CountyIntersectionOverUnions)
+                    {
+                        Console.WriteLine(string.Format(System.Globalization.CultureInfo.InvariantCulture, "  County {0}: IoU mean {1:0.000}", string.IsNullOrEmpty(keyValuePair.Key) ? "(not in manifest)" : keyValuePair.Key, keyValuePair.Value));
+                    }
+
+                    Console.WriteLine($"[INFO] Overlays: {result.OverlayDirectory}");
+
+                    if (result.FailedStepNames is List<string> failedStepNames_Check && failedStepNames_Check.Count != 0)
+                    {
+                        return Failed(failedStepNames_Check, stepNames_Configuration, stepNames_Environment);
+                    }
+
+                    return (int)YearBuiltPredictionExitCode.Succeeded;
+                }
+
+                YOLODetectorEvaluationResult? yOLODetectorEvaluationResult = options.EvaluateYOLODetectors(cancellationTokenSource.Token);
+                if (yOLODetectorEvaluationResult is null)
+                {
+                    return Fail("The detector evaluation could not be attempted - see the log.", YearBuiltPredictionExitCode.Configuration);
+                }
+
+                Notes(yOLODetectorEvaluationResult.Messages);
+
+                Console.WriteLine("Weights\tSHA256\tSubset\tCount\tMAE\tRMSE\tExact");
+                foreach (YOLODetectorEvaluation yOLODetectorEvaluation in yOLODetectorEvaluationResult.YOLODetectorEvaluations)
+                {
+                    Console.WriteLine(string.Format(System.Globalization.CultureInfo.InvariantCulture, "{0}\t{1}\t{2}\t{3}\t{4:0.000}\t{5:0.000}\t{6:0.000}", yOLODetectorEvaluation.WeightsPath, yOLODetectorEvaluation.SHA256, yOLODetectorEvaluation.Subset, yOLODetectorEvaluation.Count, yOLODetectorEvaluation.MeanAbsoluteError, yOLODetectorEvaluation.RootMeanSquareError, yOLODetectorEvaluation.ExactShare));
+                }
+
+                if (yOLODetectorEvaluationResult.FailedStepNames is List<string> failedStepNames_Evaluation && failedStepNames_Evaluation.Count != 0)
+                {
+                    return Failed(failedStepNames_Evaluation, stepNames_Configuration, stepNames_Environment);
+                }
+
+                return (int)YearBuiltPredictionExitCode.Succeeded;
+            }
+            catch (OperationCanceledException)
+            {
+                Console.ForegroundColor = ConsoleColor.Yellow;
+                Console.WriteLine("[INFO] Execution cancelled.");
+                Console.ResetColor();
+                return (int)YearBuiltPredictionExitCode.Cancelled;
+            }
+            catch (Exception exception)
+            {
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.WriteLine($"[FATAL] Unhandled error: {exception.Message}");
+                Console.ResetColor();
+                Serilog.Modify.Log(exception, "Unhandled error in {Mode}", mode);
+                return (int)YearBuiltPredictionExitCode.Failed;
             }
             finally
             {

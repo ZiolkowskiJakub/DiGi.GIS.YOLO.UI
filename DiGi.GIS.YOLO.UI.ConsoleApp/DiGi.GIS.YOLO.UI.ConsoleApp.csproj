@@ -77,6 +77,9 @@
 		<Reference Include="DiGi.EPW">
 			<HintPath>..\..\DiGi.EPW\bin\DiGi.EPW.dll</HintPath>
 		</Reference>
+		<Reference Include="DiGi.Geometry">
+			<HintPath>..\..\DiGi.Geometry\bin\DiGi.Geometry.dll</HintPath>
+		</Reference>
 		<Reference Include="DiGi.GIS">
 			<HintPath>..\..\DiGi.GIS\bin\DiGi.GIS.dll</HintPath>
 		</Reference>

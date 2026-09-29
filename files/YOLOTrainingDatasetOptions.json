@@ -1,0 +1,26 @@
+{
+  "CountyIds": [],
+  "OutputDirectory": null,
+  "CountOnly": true,
+  "Resume": true,
+  "LegacyReferencesFilePath": "user files/Data_2025.05.27.tsv",
+  "LegacyCutoff": "2025-05-23T00:00:00+00:00",
+  "Offset": 1,
+  "ValidateWeight": 0.1,
+  "HoldoutDenominator": 5,
+  "Seed": 0,
+  "MaxConcurrentRequests": 8,
+  "ReferenceBatchSize": 10000,
+  "ReferenceDuplicateLimit": 100000,
+  "PythonPath": null,
+  "WorkingDirectory": null,
+  "ModelPath": "user files/YOLO/models/model.pt",
+  "Confidence": 0.1,
+  "LabelCheckSampleSize": 500,
+  "LabelCheckOverlayCount": 20,
+  "ReportsDirectory": "user files/reports",
+  "WeightsPaths": [
+    "user files/YOLO/models/model.pt"
+  ],
+  "Years": null
+}

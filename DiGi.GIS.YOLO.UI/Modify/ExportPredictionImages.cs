@@ -4,8 +4,6 @@ using DiGi.GIS.WebAPI.Classes;
 using DiGi.WebAPI.Classes;
 using System;
 using System.Collections.Generic;
-using System.Drawing;
-using System.Drawing.Imaging;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
@@ -154,9 +152,7 @@ namespace DiGi.GIS.YOLO.UI
                                     continue;
                                 }
 
-                                using MemoryStream memoryStream = new(ortoData.Bytes);
-                                using Image image = Image.FromStream(memoryStream);
-                                image.Save(filePath, ImageFormat.Jpeg);
+                                ortoData.SavePredictionImage(filePath, out _, out _);
                             }
                         }
                         catch (Exception exception) when (!cancellationToken.IsCancellationRequested)

@@ -31,6 +31,36 @@ public const int BuildingDataReference_Maximum = 10000;
 #### Field Value
 [System\.Int32](https://learn.microsoft.com/en-us/dotnet/api/system.int32 'System\.Int32')
 
+<a name='DiGi.GIS.YOLO.UI.Constants.Count.ImageByte_Estimate'></a>
+
+## Count\.ImageByte\_Estimate Field
+
+Gets the size, in bytes, one saved training image is assumed to take when a training dataset build is estimated before any imagery is read\.
+
+A rough figure from the same sample building, whose orthophoto crops are ten to eighteen kilobytes each, plus a label file.
+
+```csharp
+public const long ImageByte_Estimate = 16000;
+```
+
+#### Field Value
+[System\.Int64](https://learn.microsoft.com/en-us/dotnet/api/system.int64 'System\.Int64')
+
+<a name='DiGi.GIS.YOLO.UI.Constants.Count.ImagePerBuilding_Estimate'></a>
+
+## Count\.ImagePerBuilding\_Estimate Field
+
+Gets the number of orthophoto years a building is assumed to carry when a training dataset build is estimated before any imagery is read\.
+
+A rough figure from a sample building with eight years of coverage (2008 to 2023). The real count is only known once the imagery is read, so the estimate is an order of magnitude, not a budget.
+
+```csharp
+public const int ImagePerBuilding_Estimate = 8;
+```
+
+#### Field Value
+[System\.Int32](https://learn.microsoft.com/en-us/dotnet/api/system.int32 'System\.Int32')
+
 <a name='DiGi.GIS.YOLO.UI.Constants.Count.YearBuiltDataReference_Maximum'></a>
 
 ## Count\.YearBuiltDataReference\_Maximum Field
@@ -85,6 +115,21 @@ public static class FileName
 Inheritance [System\.Object](https://learn.microsoft.com/en-us/dotnet/api/system.object 'System\.Object') → FileName
 ### Fields
 
+<a name='DiGi.GIS.YOLO.UI.Constants.FileName.DatasetReferences'></a>
+
+## FileName\.DatasetReferences Field
+
+Gets the name of the manifest written beside a training dataset's conf\.yaml: one row per building with its county, split, label and Legacy decision\.
+
+It is also the resume journal - a building is appended once all of its images and label files are written, so a building it names is complete.
+
+```csharp
+public const string DatasetReferences = "dataset_references.tsv";
+```
+
+#### Field Value
+[System\.String](https://learn.microsoft.com/en-us/dotnet/api/system.string 'System\.String')
+
 <a name='DiGi.GIS.YOLO.UI.Constants.FileName.GISWebAPIClientConfigurationFile'></a>
 
 ## FileName\.GISWebAPIClientConfigurationFile Field
@@ -122,6 +167,71 @@ Gets the default filename of the configuration file for the Year Built predictio
 
 ```csharp
 public const string YearBuiltPredictionPipelineOptions = "YearBuiltPredictionPipelineOptions.json";
+```
+
+#### Field Value
+[System\.String](https://learn.microsoft.com/en-us/dotnet/api/system.string 'System\.String')
+
+<a name='DiGi.GIS.YOLO.UI.Constants.FileName.YOLOTrainingDatasetOptions'></a>
+
+## FileName\.YOLOTrainingDatasetOptions Field
+
+Gets the default filename of the configuration file for the YOLO training dataset tooling \- the dataset builder, the label check and the detector evaluation\.
+
+```csharp
+public const string YOLOTrainingDatasetOptions = "YOLOTrainingDatasetOptions.json";
+```
+
+#### Field Value
+[System\.String](https://learn.microsoft.com/en-us/dotnet/api/system.string 'System\.String')
+
+<a name='DiGi.GIS.YOLO.UI.Constants.Header'></a>
+
+## Header Class
+
+Provides the header lines of the tab\-separated files the GIS YOLO UI writes\.
+
+```csharp
+public static class Header
+```
+
+Inheritance [System\.Object](https://learn.microsoft.com/en-us/dotnet/api/system.object 'System\.Object') → Header
+### Fields
+
+<a name='DiGi.GIS.YOLO.UI.Constants.Header.DatasetReferences'></a>
+
+## Header\.DatasetReferences Field
+
+Gets the header of the `dataset_references.tsv` manifest\. The columns are read by name, so this is the contract between the dataset builder and the two checks that read the dataset\.
+
+```csharp
+public const string DatasetReferences = "Reference	CountyId	Category	Label	Legacy	LegacySource";
+```
+
+#### Field Value
+[System\.String](https://learn.microsoft.com/en-us/dotnet/api/system.string 'System\.String')
+
+<a name='DiGi.GIS.YOLO.UI.Constants.LabelName'></a>
+
+## LabelName Class
+
+Provides the class names of the YOLO training dataset\.
+
+```csharp
+public static class LabelName
+```
+
+Inheritance [System\.Object](https://learn.microsoft.com/en-us/dotnet/api/system.object 'System\.Object') → LabelName
+### Fields
+
+<a name='DiGi.GIS.YOLO.UI.Constants.LabelName.Building'></a>
+
+## LabelName\.Building Field
+
+Gets the name of the single class the year built detector is trained on\. It is added first, so it is class index 0 \- the index the production weights report\.
+
+```csharp
+public const string Building = "Building";
 ```
 
 #### Field Value

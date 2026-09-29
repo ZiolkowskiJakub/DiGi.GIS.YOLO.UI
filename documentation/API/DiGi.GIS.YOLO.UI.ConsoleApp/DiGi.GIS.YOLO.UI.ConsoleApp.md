@@ -14,7 +14,51 @@ public static class Program
 ```
 
 Inheritance [System\.Object](https://learn.microsoft.com/en-us/dotnet/api/system.object 'System\.Object') → Program
+### Fields
+
+<a name='DiGi.GIS.YOLO.UI.ConsoleApp.Program.Usage'></a>
+
+## Program\.Usage Field
+
+The usage text printed when the arguments or the options cannot be read\.
+
+```csharp
+private const string Usage = "Usage: DiGi.GIS.YOLO.UI.ConsoleApp [path-to-options.json]
+       DiGi.GIS.YOLO.UI.ConsoleApp --dataset|--check-labels|--evaluate-detector [path-to-YOLOTrainingDatasetOptions.json]";
+```
+
+#### Field Value
+[System\.String](https://learn.microsoft.com/en-us/dotnet/api/system.string 'System\.String')
 ### Methods
+
+<a name='DiGi.GIS.YOLO.UI.ConsoleApp.Program.DatasetModeAsync(string,string)'></a>
+
+## Program\.DatasetModeAsync\(string, string\) Method
+
+Runs one of the YOLO training dataset modes: `--dataset` builds \(or, with [DiGi\.GIS\.YOLO\.UI\.Classes\.YOLOTrainingDatasetOptions\.CountOnly](https://learn.microsoft.com/en-us/dotnet/api/digi.gis.yolo.ui.classes.yolotrainingdatasetoptions.countonly 'DiGi\.GIS\.YOLO\.UI\.Classes\.YOLOTrainingDatasetOptions\.CountOnly'), only counts\) a training dataset from the deployed data, `--check-labels` checks its label boxes against the current detector, and `--evaluate-detector` compares weights files on its Test buildings\.
+
+The exit codes are the prediction run's: [DiGi\.GIS\.YOLO\.UI\.Enums\.YearBuiltPredictionExitCode\.Configuration](https://learn.microsoft.com/en-us/dotnet/api/digi.gis.yolo.ui.enums.yearbuiltpredictionexitcode.configuration 'DiGi\.GIS\.YOLO\.UI\.Enums\.YearBuiltPredictionExitCode\.Configuration') for options that cannot be used, [DiGi\.GIS\.YOLO\.UI\.Enums\.YearBuiltPredictionExitCode\.Environment](https://learn.microsoft.com/en-us/dotnet/api/digi.gis.yolo.ui.enums.yearbuiltpredictionexitcode.environment 'DiGi\.GIS\.YOLO\.UI\.Enums\.YearBuiltPredictionExitCode\.Environment') for weights or an interpreter the machine does not have, [DiGi\.GIS\.YOLO\.UI\.Enums\.YearBuiltPredictionExitCode\.Authorization](https://learn.microsoft.com/en-us/dotnet/api/digi.gis.yolo.ui.enums.yearbuiltpredictionexitcode.authorization 'DiGi\.GIS\.YOLO\.UI\.Enums\.YearBuiltPredictionExitCode\.Authorization') for a missing key (`--dataset` only - the other two read nothing from the Web API), [DiGi\.GIS\.YOLO\.UI\.Enums\.YearBuiltPredictionExitCode\.Failed](https://learn.microsoft.com/en-us/dotnet/api/digi.gis.yolo.ui.enums.yearbuiltpredictionexitcode.failed 'DiGi\.GIS\.YOLO\.UI\.Enums\.YearBuiltPredictionExitCode\.Failed') for a step that failed while running, and [DiGi\.GIS\.YOLO\.UI\.Enums\.YearBuiltPredictionExitCode\.Cancelled](https://learn.microsoft.com/en-us/dotnet/api/digi.gis.yolo.ui.enums.yearbuiltpredictionexitcode.cancelled 'DiGi\.GIS\.YOLO\.UI\.Enums\.YearBuiltPredictionExitCode\.Cancelled').
+
+```csharp
+private static System.Threading.Tasks.Task<int> DatasetModeAsync(string mode, string? path_Options);
+```
+#### Parameters
+
+<a name='DiGi.GIS.YOLO.UI.ConsoleApp.Program.DatasetModeAsync(string,string).mode'></a>
+
+`mode` [System\.String](https://learn.microsoft.com/en-us/dotnet/api/system.string 'System\.String')
+
+The mode flag\.
+
+<a name='DiGi.GIS.YOLO.UI.ConsoleApp.Program.DatasetModeAsync(string,string).path_Options'></a>
+
+`path_Options` [System\.String](https://learn.microsoft.com/en-us/dotnet/api/system.string 'System\.String')
+
+The path of the options file, or null for [DiGi\.GIS\.YOLO\.UI\.Constants\.FileName\.YOLOTrainingDatasetOptions](https://learn.microsoft.com/en-us/dotnet/api/digi.gis.yolo.ui.constants.filename.yolotrainingdatasetoptions 'DiGi\.GIS\.YOLO\.UI\.Constants\.FileName\.YOLOTrainingDatasetOptions') beside the executable\.
+
+#### Returns
+[System\.Threading\.Tasks\.Task&lt;](https://learn.microsoft.com/en-us/dotnet/api/system.threading.tasks.task-1 'System\.Threading\.Tasks\.Task\`1')[System\.Int32](https://learn.microsoft.com/en-us/dotnet/api/system.int32 'System\.Int32')[&gt;](https://learn.microsoft.com/en-us/dotnet/api/system.threading.tasks.task-1 'System\.Threading\.Tasks\.Task\`1')  
+One of [DiGi\.GIS\.YOLO\.UI\.Enums\.YearBuiltPredictionExitCode](https://learn.microsoft.com/en-us/dotnet/api/digi.gis.yolo.ui.enums.yearbuiltpredictionexitcode 'DiGi\.GIS\.YOLO\.UI\.Enums\.YearBuiltPredictionExitCode') as an integer\.
 
 <a name='DiGi.GIS.YOLO.UI.ConsoleApp.Program.Main(string[])'></a>
 
@@ -31,7 +75,7 @@ public static System.Threading.Tasks.Task<int> Main(string[] args);
 
 `args` [System\.String](https://learn.microsoft.com/en-us/dotnet/api/system.string 'System\.String')[\[\]](https://learn.microsoft.com/en-us/dotnet/api/system.array 'System\.Array')
 
-Optional arguments\. The first argument specifies the path to the options JSON file\.
+Optional arguments\. With no flag, the first argument is the path of the prediction options file\. A leading `--dataset`, `--check-labels` or `--evaluate-detector` selects a training dataset mode instead, and the argument after it is the path of the [DiGi\.GIS\.YOLO\.UI\.Classes\.YOLOTrainingDatasetOptions](https://learn.microsoft.com/en-us/dotnet/api/digi.gis.yolo.ui.classes.yolotrainingdatasetoptions 'DiGi\.GIS\.YOLO\.UI\.Classes\.YOLOTrainingDatasetOptions') file\.
 
 #### Returns
 [System\.Threading\.Tasks\.Task&lt;](https://learn.microsoft.com/en-us/dotnet/api/system.threading.tasks.task-1 'System\.Threading\.Tasks\.Task\`1')[System\.Int32](https://learn.microsoft.com/en-us/dotnet/api/system.int32 'System\.Int32')[&gt;](https://learn.microsoft.com/en-us/dotnet/api/system.threading.tasks.task-1 'System\.Threading\.Tasks\.Task\`1')  
