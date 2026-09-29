@@ -139,8 +139,7 @@ namespace DiGi.GIS.YOLO.UI
                 {
                     projectDirectory = Path.GetFullPath(yOLOTrainingRunOptions.ProjectDirectory);
 
-                    string modelsSegment = string.Concat(Path.DirectorySeparatorChar, DiGi.YOLO.Constants.DirectoryName.YOLO, Path.DirectorySeparatorChar, "models", Path.DirectorySeparatorChar);
-                    if (string.Concat(projectDirectory, Path.DirectorySeparatorChar).IndexOf(modelsSegment, StringComparison.OrdinalIgnoreCase) >= 0)
+                    if (DiGi.YOLO.Query.IsInsideModelsDirectory(projectDirectory))
                     {
                         Fail(nameof(YOLOTrainingRunOptions.ProjectDirectory), string.Format(CultureInfo.InvariantCulture, "Refusing to write a run under '{0}': it is inside a YOLO\\models folder, where the frozen weights live.", projectDirectory));
                     }
