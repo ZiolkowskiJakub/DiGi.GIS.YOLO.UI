@@ -170,6 +170,48 @@ The prediction run's codes, with these meanings:
 
 These are rough figures from one sample building, meant to give the order of magnitude. A county of 30 000 labelled buildings is therefore about 30 000 orthophoto requests, 240 000 images and 4 GB. At `MaxConcurrentRequests = 8`, requests are the bottleneck, so measure the first county before scheduling the rest.
 
+## Retraining the detector — `--train`
+
+`--train [path-to-YOLOTrainingRunOptions.json]` runs the retraining as one run, stopping at the first failed step. The steps always run in this order, and `Steps` narrows them (null runs all):
+
+1. `Dataset` — `--dataset`: builds the training dataset, or appends to the folder that already exists (resumable).
+2. `LabelCheck` — `--check-labels`.
+3. `Train` — `DiGi.YOLO` `Modify.Train` from `StartWeightsPath`, a `.pt` checkpoint (an earlier detector) or the base `yolo26x.pt`.
+4. `Validate` — `Modify.Validate` on the Test split. Without `Train` it measures the start weights, the baseline a candidate is compared with.
+5. `Evaluate` — `--evaluate-detector` over `DatasetOptions.WeightsPaths` plus the trained weights.
+
+The trained weights are copied to `<ProjectDirectory>\<RunName>\<RunName>.pt`, a new file that is never overwritten and never named `model`. The start weights and the copy are printed and logged with their **SHA-256**, and the copy is re-hashed and compared with the digest the training reported, so every row of the comparison table names exactly which file it measures. Every path is made absolute, and everything that can be known without starting a process — a missing start file, an unusable interpreter, a run name that is taken, a `ProjectDirectory` inside a `YOLO\models` folder — is refused before the first step, with the option it concerns as the step name.
+
+Progress lines are the same `[PROGRESS]` / `[INFO]` lines as the other modes. The nested `DatasetOptions` is a plain object, exactly as in a `YOLOTrainingDatasetOptions` file.
+
+### Options — `YOLOTrainingRunOptions`
+
+| Member | Default |
+|---|---|
+| `DatasetOptions` | none — required, with an absolute `OutputDirectory`; `PythonPath` and `WorkingDirectory` of the run take precedence over its own |
+| `StartWeightsPath` | none — required for `Train` and `Validate` |
+| `RunName`, `ProjectDirectory` | none — required for `Train` (the folder is absolute) |
+| `Epochs` / `Patience` / `ImageSize` / `Batch` / `Seed` | `150` / `50` / `640` / `16` / `0` (the `DiGi.YOLO` README) |
+| `Device`, `PythonPath`, `WorkingDirectory` | `null` |
+| `Steps` | `null` — all; the committed template lists only `Dataset`, and counts |
+
+### Exit codes of `--train`
+
+The prediction run's codes, plus two:
+
+| Code | Meaning |
+|---|---|
+| 0 | every step that was asked for completed |
+| 1 | an option cannot be used (options, dataset, start weights, run name, project folder) or the dataset step refused its scope |
+| 2 | the interpreter or weights are missing, or the interpreter cannot run the training |
+| 3 | no Web API key (only when `Dataset` runs) |
+| 4 | the dataset build, the label check or the evaluation failed while running |
+| 5 | cancelled; earlier outputs are left as they are and the dataset manifest lets a re-run continue |
+| 6 | the training did not produce weights |
+| 7 | the trained weights could not be validated on the Test split |
+
+`Query.YOLOTrainingRunExitCode` maps a `YOLOTrainingRunResult` to these codes; failed steps are listed as `YOLOTrainingStep.<Step>` so a dataset split named `Train` is never read as a failed training.
+
 ## 💻 Coding Guidelines for Developers & AI Agents
 
 To maintain codebase health, performance, and compatibility within Visual Studio 2026 / C# 10+ environments, all developers and AI agents must strictly comply with these guidelines.

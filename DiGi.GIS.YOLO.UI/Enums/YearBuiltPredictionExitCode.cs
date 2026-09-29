@@ -38,6 +38,16 @@ namespace DiGi.GIS.YOLO.UI.Enums
         /// <summary>
         /// The run was stopped before it finished. What it had already written is committed.
         /// </summary>
-        [Description("Execution cancelled by user")] Cancelled = 5
+        [Description("Execution cancelled by user")] Cancelled = 5,
+
+        /// <summary>
+        /// The <c>--train</c> mode started the training and it did not produce weights, or it was refused before the interpreter started. Earlier steps' outputs are written.
+        /// </summary>
+        [Description("Detector training failed")] Training = 6,
+
+        /// <summary>
+        /// The <c>--train</c> mode trained weights, and their validation on the Test split did not complete. The weights are written.
+        /// </summary>
+        [Description("Detector validation failed")] Validation = 7
     }
 }

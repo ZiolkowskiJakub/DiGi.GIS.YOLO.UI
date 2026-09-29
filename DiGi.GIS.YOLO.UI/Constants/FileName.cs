@@ -27,6 +27,11 @@ namespace DiGi.GIS.YOLO.UI.Constants
         public const string YOLOTrainingDatasetOptions = "YOLOTrainingDatasetOptions.json";
 
         /// <summary>
+        /// Gets the default filename of the configuration file for the <c>--train</c> console mode.
+        /// </summary>
+        public const string YOLOTrainingRunOptions = "YOLOTrainingRunOptions.json";
+
+        /// <summary>
         /// Gets the name of the manifest written beside a training dataset&apos;s conf.yaml: one row per building with its county, split, label and Legacy decision.
         /// <para>It is also the resume journal - a building is appended once all of its images and label files are written, so a building it names is complete.</para>
         /// </summary>

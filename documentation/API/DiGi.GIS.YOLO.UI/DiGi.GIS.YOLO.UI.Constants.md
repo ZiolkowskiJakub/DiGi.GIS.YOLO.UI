@@ -185,6 +185,19 @@ public const string YOLOTrainingDatasetOptions = "YOLOTrainingDatasetOptions.jso
 #### Field Value
 [System\.String](https://learn.microsoft.com/en-us/dotnet/api/system.string 'System\.String')
 
+<a name='DiGi.GIS.YOLO.UI.Constants.FileName.YOLOTrainingRunOptions'></a>
+
+## FileName\.YOLOTrainingRunOptions Field
+
+Gets the default filename of the configuration file for the `--train` console mode\.
+
+```csharp
+public const string YOLOTrainingRunOptions = "YOLOTrainingRunOptions.json";
+```
+
+#### Field Value
+[System\.String](https://learn.microsoft.com/en-us/dotnet/api/system.string 'System\.String')
+
 <a name='DiGi.GIS.YOLO.UI.Constants.Header'></a>
 
 ## Header Class

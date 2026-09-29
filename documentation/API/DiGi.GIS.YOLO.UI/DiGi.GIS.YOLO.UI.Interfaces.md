@@ -23,6 +23,8 @@ Derived
 ↳ [YOLOTrainingDatasetCount](DiGi.GIS.YOLO.UI.Classes.md#DiGi.GIS.YOLO.UI.Classes.YOLOTrainingDatasetCount 'DiGi\.GIS\.YOLO\.UI\.Classes\.YOLOTrainingDatasetCount')  
 ↳ [YOLOTrainingDatasetOptions](DiGi.GIS.YOLO.UI.Classes.md#DiGi.GIS.YOLO.UI.Classes.YOLOTrainingDatasetOptions 'DiGi\.GIS\.YOLO\.UI\.Classes\.YOLOTrainingDatasetOptions')  
 ↳ [YOLOTrainingDatasetResult](DiGi.GIS.YOLO.UI.Classes.md#DiGi.GIS.YOLO.UI.Classes.YOLOTrainingDatasetResult 'DiGi\.GIS\.YOLO\.UI\.Classes\.YOLOTrainingDatasetResult')  
+↳ [YOLOTrainingRunOptions](DiGi.GIS.YOLO.UI.Classes.md#DiGi.GIS.YOLO.UI.Classes.YOLOTrainingRunOptions 'DiGi\.GIS\.YOLO\.UI\.Classes\.YOLOTrainingRunOptions')  
+↳ [YOLOTrainingRunResult](DiGi.GIS.YOLO.UI.Classes.md#DiGi.GIS.YOLO.UI.Classes.YOLOTrainingRunResult 'DiGi\.GIS\.YOLO\.UI\.Classes\.YOLOTrainingRunResult')  
 ↳ [IGISYOLOUISerializableObject](DiGi.GIS.YOLO.UI.Interfaces.md#DiGi.GIS.YOLO.UI.Interfaces.IGISYOLOUISerializableObject 'DiGi\.GIS\.YOLO\.UI\.Interfaces\.IGISYOLOUISerializableObject')
 
 Implements [DiGi\.Core\.Interfaces\.IObject](https://learn.microsoft.com/en-us/dotnet/api/digi.core.interfaces.iobject 'DiGi\.Core\.Interfaces\.IObject')
@@ -46,6 +48,8 @@ Derived
 ↳ [YOLOLabelCheckResult](DiGi.GIS.YOLO.UI.Classes.md#DiGi.GIS.YOLO.UI.Classes.YOLOLabelCheckResult 'DiGi\.GIS\.YOLO\.UI\.Classes\.YOLOLabelCheckResult')  
 ↳ [YOLOTrainingDatasetCount](DiGi.GIS.YOLO.UI.Classes.md#DiGi.GIS.YOLO.UI.Classes.YOLOTrainingDatasetCount 'DiGi\.GIS\.YOLO\.UI\.Classes\.YOLOTrainingDatasetCount')  
 ↳ [YOLOTrainingDatasetOptions](DiGi.GIS.YOLO.UI.Classes.md#DiGi.GIS.YOLO.UI.Classes.YOLOTrainingDatasetOptions 'DiGi\.GIS\.YOLO\.UI\.Classes\.YOLOTrainingDatasetOptions')  
-↳ [YOLOTrainingDatasetResult](DiGi.GIS.YOLO.UI.Classes.md#DiGi.GIS.YOLO.UI.Classes.YOLOTrainingDatasetResult 'DiGi\.GIS\.YOLO\.UI\.Classes\.YOLOTrainingDatasetResult')
+↳ [YOLOTrainingDatasetResult](DiGi.GIS.YOLO.UI.Classes.md#DiGi.GIS.YOLO.UI.Classes.YOLOTrainingDatasetResult 'DiGi\.GIS\.YOLO\.UI\.Classes\.YOLOTrainingDatasetResult')  
+↳ [YOLOTrainingRunOptions](DiGi.GIS.YOLO.UI.Classes.md#DiGi.GIS.YOLO.UI.Classes.YOLOTrainingRunOptions 'DiGi\.GIS\.YOLO\.UI\.Classes\.YOLOTrainingRunOptions')  
+↳ [YOLOTrainingRunResult](DiGi.GIS.YOLO.UI.Classes.md#DiGi.GIS.YOLO.UI.Classes.YOLOTrainingRunResult 'DiGi\.GIS\.YOLO\.UI\.Classes\.YOLOTrainingRunResult')
 
 Implements [IGISYOLOUIObject](DiGi.GIS.YOLO.UI.Interfaces.md#DiGi.GIS.YOLO.UI.Interfaces.IGISYOLOUIObject 'DiGi\.GIS\.YOLO\.UI\.Interfaces\.IGISYOLOUIObject'), [DiGi\.Core\.Interfaces\.IObject](https://learn.microsoft.com/en-us/dotnet/api/digi.core.interfaces.iobject 'DiGi\.Core\.Interfaces\.IObject'), [DiGi\.Core\.Interfaces\.ISerializableObject](https://learn.microsoft.com/en-us/dotnet/api/digi.core.interfaces.iserializableobject 'DiGi\.Core\.Interfaces\.ISerializableObject'), [DiGi\.Core\.Interfaces\.ICloneableObject&lt;](https://learn.microsoft.com/en-us/dotnet/api/digi.core.interfaces.icloneableobject-1 'DiGi\.Core\.Interfaces\.ICloneableObject\`1')[DiGi\.Core\.Interfaces\.ISerializableObject](https://learn.microsoft.com/en-us/dotnet/api/digi.core.interfaces.iserializableobject 'DiGi\.Core\.Interfaces\.ISerializableObject')[&gt;](https://learn.microsoft.com/en-us/dotnet/api/digi.core.interfaces.icloneableobject-1 'DiGi\.Core\.Interfaces\.ICloneableObject\`1'), [DiGi\.Core\.Interfaces\.ICloneableObject](https://learn.microsoft.com/en-us/dotnet/api/digi.core.interfaces.icloneableobject 'DiGi\.Core\.Interfaces\.ICloneableObject')

@@ -363,6 +363,57 @@ The [System\.Threading\.CancellationToken](https://learn.microsoft.com/en-us/dot
 [System\.Threading\.Tasks\.Task&lt;](https://learn.microsoft.com/en-us/dotnet/api/system.threading.tasks.task-1 'System\.Threading\.Tasks\.Task\`1')[YearBuiltPredictionResult](DiGi.GIS.YOLO.UI.Classes.md#DiGi.GIS.YOLO.UI.Classes.YearBuiltPredictionResult 'DiGi\.GIS\.YOLO\.UI\.Classes\.YearBuiltPredictionResult')[&gt;](https://learn.microsoft.com/en-us/dotnet/api/system.threading.tasks.task-1 'System\.Threading\.Tasks\.Task\`1')  
 A task returning what the run did, or null when the run could not be attempted at all \- no manager, no county named, or no scratch directory\.
 
+<a name='DiGi.GIS.YOLO.UI.Modify.RunYOLOTrainingAsync(thisDiGi.GIS.WebAPI.Classes.GISWebAPIManager,DiGi.GIS.YOLO.UI.Classes.YOLOTrainingRunOptions,System.IProgress_long_,System.IProgress_string_,System.Threading.CancellationToken)'></a>
+
+## Modify\.RunYOLOTrainingAsync\(this GISWebAPIManager, YOLOTrainingRunOptions, IProgress\<long\>, IProgress\<string\>, CancellationToken\) Method
+
+Runs the detector retraining as one run: builds or appends to the training dataset, checks its labels, trains from the start weights, validates the result on the Test split and scores it against the other detectors\.
+
+The steps run in the order of [YOLOTrainingStep](DiGi.GIS.YOLO.UI.Enums.md#DiGi.GIS.YOLO.UI.Enums.YOLOTrainingStep 'DiGi\.GIS\.YOLO\.UI\.Enums\.YOLOTrainingStep') and the run stops at the first one that fails; [Steps](DiGi.GIS.YOLO.UI.Classes.md#DiGi.GIS.YOLO.UI.Classes.YOLOTrainingRunOptions.Steps 'DiGi\.GIS\.YOLO\.UI\.Classes\.YOLOTrainingRunOptions\.Steps') narrows them. Every path is made absolute and every refusal that can be known up front - a missing start file, an unusable interpreter, a run name that is taken, a project folder inside a `YOLO\models` folder - is reported before the first step starts, with the option it concerns as the step name.
+
+The trained weights are copied to `<ProjectDirectory>\<RunName>\<RunName>.pt`, a new file that is never overwritten and never named `model`; the validation and the evaluation measure that copy, and its SHA-256 is compared with the one the training reported. The identity of the start weights and of the copy is written to the log and to [information](DiGi.GIS.YOLO.UI.md#DiGi.GIS.YOLO.UI.Modify.RunYOLOTrainingAsync(thisDiGi.GIS.WebAPI.Classes.GISWebAPIManager,DiGi.GIS.YOLO.UI.Classes.YOLOTrainingRunOptions,System.IProgress_long_,System.IProgress_string_,System.Threading.CancellationToken).information 'DiGi\.GIS\.YOLO\.UI\.Modify\.RunYOLOTrainingAsync\(this DiGi\.GIS\.WebAPI\.Classes\.GISWebAPIManager, DiGi\.GIS\.YOLO\.UI\.Classes\.YOLOTrainingRunOptions, System\.IProgress\<long\>, System\.IProgress\<string\>, System\.Threading\.CancellationToken\)\.information') as soon as it is known. Without the training step the validation measures the start weights, which gives the baseline a candidate is compared with.
+
+A cancellation is a result with [Cancelled](DiGi.GIS.YOLO.UI.Classes.md#DiGi.GIS.YOLO.UI.Classes.YOLOTrainingRunResult.Cancelled 'DiGi\.GIS\.YOLO\.UI\.Classes\.YOLOTrainingRunResult\.Cancelled') set rather than an exception, and what earlier steps wrote is left as it is; the dataset manifest lets a re-run continue.
+
+```csharp
+public static System.Threading.Tasks.Task<DiGi.GIS.YOLO.UI.Classes.YOLOTrainingRunResult?> RunYOLOTrainingAsync(this DiGi.GIS.WebAPI.Classes.GISWebAPIManager? gisWebAPIManager, DiGi.GIS.YOLO.UI.Classes.YOLOTrainingRunOptions? yOLOTrainingRunOptions, System.IProgress<long>? progress=null, System.IProgress<string>? information=null, System.Threading.CancellationToken cancellationToken=default(System.Threading.CancellationToken));
+```
+#### Parameters
+
+<a name='DiGi.GIS.YOLO.UI.Modify.RunYOLOTrainingAsync(thisDiGi.GIS.WebAPI.Classes.GISWebAPIManager,DiGi.GIS.YOLO.UI.Classes.YOLOTrainingRunOptions,System.IProgress_long_,System.IProgress_string_,System.Threading.CancellationToken).gisWebAPIManager'></a>
+
+`gisWebAPIManager` [DiGi\.GIS\.WebAPI\.Classes\.GISWebAPIManager](https://learn.microsoft.com/en-us/dotnet/api/digi.gis.webapi.classes.giswebapimanager 'DiGi\.GIS\.WebAPI\.Classes\.GISWebAPIManager')
+
+The client of the Web API, needed only by the [Dataset](DiGi.GIS.YOLO.UI.Enums.md#DiGi.GIS.YOLO.UI.Enums.YOLOTrainingStep.Dataset 'DiGi\.GIS\.YOLO\.UI\.Enums\.YOLOTrainingStep\.Dataset') step\.
+
+<a name='DiGi.GIS.YOLO.UI.Modify.RunYOLOTrainingAsync(thisDiGi.GIS.WebAPI.Classes.GISWebAPIManager,DiGi.GIS.YOLO.UI.Classes.YOLOTrainingRunOptions,System.IProgress_long_,System.IProgress_string_,System.Threading.CancellationToken).yOLOTrainingRunOptions'></a>
+
+`yOLOTrainingRunOptions` [YOLOTrainingRunOptions](DiGi.GIS.YOLO.UI.Classes.md#DiGi.GIS.YOLO.UI.Classes.YOLOTrainingRunOptions 'DiGi\.GIS\.YOLO\.UI\.Classes\.YOLOTrainingRunOptions')
+
+The options naming the dataset, the start weights, the run and the steps\.
+
+<a name='DiGi.GIS.YOLO.UI.Modify.RunYOLOTrainingAsync(thisDiGi.GIS.WebAPI.Classes.GISWebAPIManager,DiGi.GIS.YOLO.UI.Classes.YOLOTrainingRunOptions,System.IProgress_long_,System.IProgress_string_,System.Threading.CancellationToken).progress'></a>
+
+`progress` [System\.IProgress&lt;](https://learn.microsoft.com/en-us/dotnet/api/system.iprogress-1 'System\.IProgress\`1')[System\.Int64](https://learn.microsoft.com/en-us/dotnet/api/system.int64 'System\.Int64')[&gt;](https://learn.microsoft.com/en-us/dotnet/api/system.iprogress-1 'System\.IProgress\`1')
+
+Receives the number of buildings the dataset step has completed\.
+
+<a name='DiGi.GIS.YOLO.UI.Modify.RunYOLOTrainingAsync(thisDiGi.GIS.WebAPI.Classes.GISWebAPIManager,DiGi.GIS.YOLO.UI.Classes.YOLOTrainingRunOptions,System.IProgress_long_,System.IProgress_string_,System.Threading.CancellationToken).information'></a>
+
+`information` [System\.IProgress&lt;](https://learn.microsoft.com/en-us/dotnet/api/system.iprogress-1 'System\.IProgress\`1')[System\.String](https://learn.microsoft.com/en-us/dotnet/api/system.string 'System\.String')[&gt;](https://learn.microsoft.com/en-us/dotnet/api/system.iprogress-1 'System\.IProgress\`1')
+
+Receives one line for each thing worth reporting, without a prefix\.
+
+<a name='DiGi.GIS.YOLO.UI.Modify.RunYOLOTrainingAsync(thisDiGi.GIS.WebAPI.Classes.GISWebAPIManager,DiGi.GIS.YOLO.UI.Classes.YOLOTrainingRunOptions,System.IProgress_long_,System.IProgress_string_,System.Threading.CancellationToken).cancellationToken'></a>
+
+`cancellationToken` [System\.Threading\.CancellationToken](https://learn.microsoft.com/en-us/dotnet/api/system.threading.cancellationtoken 'System\.Threading\.CancellationToken')
+
+The [System\.Threading\.CancellationToken](https://learn.microsoft.com/en-us/dotnet/api/system.threading.cancellationtoken 'System\.Threading\.CancellationToken') to observe\.
+
+#### Returns
+[System\.Threading\.Tasks\.Task&lt;](https://learn.microsoft.com/en-us/dotnet/api/system.threading.tasks.task-1 'System\.Threading\.Tasks\.Task\`1')[YOLOTrainingRunResult](DiGi.GIS.YOLO.UI.Classes.md#DiGi.GIS.YOLO.UI.Classes.YOLOTrainingRunResult 'DiGi\.GIS\.YOLO\.UI\.Classes\.YOLOTrainingRunResult')[&gt;](https://learn.microsoft.com/en-us/dotnet/api/system.threading.tasks.task-1 'System\.Threading\.Tasks\.Task\`1')  
+The result, or null when there are no options\.
+
 <a name='DiGi.GIS.YOLO.UI.Modify.SavePredictionImage(thisDiGi.GIS.Classes.OrtoData,string,int,int)'></a>
 
 ## Modify\.SavePredictionImage\(this OrtoData, string, int, int\) Method
@@ -1409,3 +1460,72 @@ The optional file path to YOLOTrainingDatasetOptions\.json\. If omitted, [Config
 #### Returns
 [YOLOTrainingDatasetOptions](DiGi.GIS.YOLO.UI.Classes.md#DiGi.GIS.YOLO.UI.Classes.YOLOTrainingDatasetOptions 'DiGi\.GIS\.YOLO\.UI\.Classes\.YOLOTrainingDatasetOptions')  
 The deserialized options instance, or null if not found or invalid\.
+
+<a name='DiGi.GIS.YOLO.UI.Query.YOLOTrainingRunExitCode(DiGi.GIS.YOLO.UI.Classes.YOLOTrainingRunResult)'></a>
+
+## Query\.YOLOTrainingRunExitCode\(YOLOTrainingRunResult\) Method
+
+Maps the outcome of a `--train` run to the exit code of the console application\.
+
+A cancellation is [Cancelled](DiGi.GIS.YOLO.UI.Enums.md#DiGi.GIS.YOLO.UI.Enums.YearBuiltPredictionExitCode.Cancelled 'DiGi\.GIS\.YOLO\.UI\.Enums\.YearBuiltPredictionExitCode\.Cancelled') whatever else was listed. Otherwise an option that cannot be used is a [Configuration](DiGi.GIS.YOLO.UI.Enums.md#DiGi.GIS.YOLO.UI.Enums.YearBuiltPredictionExitCode.Configuration 'DiGi\.GIS\.YOLO\.UI\.Enums\.YearBuiltPredictionExitCode\.Configuration'), a machine that cannot run the detector an [Environment](DiGi.GIS.YOLO.UI.Enums.md#DiGi.GIS.YOLO.UI.Enums.YearBuiltPredictionExitCode.Environment 'DiGi\.GIS\.YOLO\.UI\.Enums\.YearBuiltPredictionExitCode\.Environment'), the training and the validation have codes of their own, and any other failed step is [Failed](DiGi.GIS.YOLO.UI.Enums.md#DiGi.GIS.YOLO.UI.Enums.YearBuiltPredictionExitCode.Failed 'DiGi\.GIS\.YOLO\.UI\.Enums\.YearBuiltPredictionExitCode\.Failed'). The earlier reading of the same step wins, so a run refused before its first step keeps the code of what was wrong with the options.
+
+```csharp
+public static DiGi.GIS.YOLO.UI.Enums.YearBuiltPredictionExitCode YOLOTrainingRunExitCode(DiGi.GIS.YOLO.UI.Classes.YOLOTrainingRunResult? yOLOTrainingRunResult);
+```
+#### Parameters
+
+<a name='DiGi.GIS.YOLO.UI.Query.YOLOTrainingRunExitCode(DiGi.GIS.YOLO.UI.Classes.YOLOTrainingRunResult).yOLOTrainingRunResult'></a>
+
+`yOLOTrainingRunResult` [YOLOTrainingRunResult](DiGi.GIS.YOLO.UI.Classes.md#DiGi.GIS.YOLO.UI.Classes.YOLOTrainingRunResult 'DiGi\.GIS\.YOLO\.UI\.Classes\.YOLOTrainingRunResult')
+
+The result of the run\.
+
+#### Returns
+[YearBuiltPredictionExitCode](DiGi.GIS.YOLO.UI.Enums.md#DiGi.GIS.YOLO.UI.Enums.YearBuiltPredictionExitCode 'DiGi\.GIS\.YOLO\.UI\.Enums\.YearBuiltPredictionExitCode')  
+The exit code\. [Failed](DiGi.GIS.YOLO.UI.Enums.md#DiGi.GIS.YOLO.UI.Enums.YearBuiltPredictionExitCode.Failed 'DiGi\.GIS\.YOLO\.UI\.Enums\.YearBuiltPredictionExitCode\.Failed') when there is no result\.
+
+<a name='DiGi.GIS.YOLO.UI.Query.YOLOTrainingRunOptions(string)'></a>
+
+## Query\.YOLOTrainingRunOptions\(string\) Method
+
+Reads and deserializes the [YOLOTrainingRunOptions\(string\)](DiGi.GIS.YOLO.UI.md#DiGi.GIS.YOLO.UI.Query.YOLOTrainingRunOptions(string) 'DiGi\.GIS\.YOLO\.UI\.Query\.YOLOTrainingRunOptions\(string\)') from the specified path or default locations\.
+
+The nested [DatasetOptions](DiGi.GIS.YOLO.UI.Classes.md#DiGi.GIS.YOLO.UI.Classes.YOLOTrainingRunOptions.DatasetOptions 'DiGi\.GIS\.YOLO\.UI\.Classes\.YOLOTrainingRunOptions\.DatasetOptions') is written as a plain object, exactly as in a [YOLOTrainingDatasetOptions\(string\)](DiGi.GIS.YOLO.UI.md#DiGi.GIS.YOLO.UI.Query.YOLOTrainingDatasetOptions(string) 'DiGi\.GIS\.YOLO\.UI\.Query\.YOLOTrainingDatasetOptions\(string\)') file. A member the file does not name keeps the class default, and a key the class does not declare is dropped in silence - so a misspelt flag reads as an unchanged one. The committed template beside the deployed application is the authority on the spelling.
+
+```csharp
+public static DiGi.GIS.YOLO.UI.Classes.YOLOTrainingRunOptions? YOLOTrainingRunOptions(string? path=null);
+```
+#### Parameters
+
+<a name='DiGi.GIS.YOLO.UI.Query.YOLOTrainingRunOptions(string).path'></a>
+
+`path` [System\.String](https://learn.microsoft.com/en-us/dotnet/api/system.string 'System\.String')
+
+The optional file path to YOLOTrainingRunOptions\.json\. If omitted, [ConfigurationFilePath\(string\)](DiGi.GIS.YOLO.UI.md#DiGi.GIS.YOLO.UI.Query.ConfigurationFilePath(string) 'DiGi\.GIS\.YOLO\.UI\.Query\.ConfigurationFilePath\(string\)') resolves it against the deployed output\.
+
+#### Returns
+[YOLOTrainingRunOptions](DiGi.GIS.YOLO.UI.Classes.md#DiGi.GIS.YOLO.UI.Classes.YOLOTrainingRunOptions 'DiGi\.GIS\.YOLO\.UI\.Classes\.YOLOTrainingRunOptions')  
+The deserialized options instance, or null if not found or invalid\.
+
+<a name='DiGi.GIS.YOLO.UI.Query.YOLOTrainingStepName(DiGi.GIS.YOLO.UI.Enums.YOLOTrainingStep)'></a>
+
+## Query\.YOLOTrainingStepName\(YOLOTrainingStep\) Method
+
+Gives the name under which a failed step of the `--train` mode is listed in [FailedStepNames](DiGi.GIS.YOLO.UI.Classes.md#DiGi.GIS.YOLO.UI.Classes.YOLOTrainingRunResult.FailedStepNames 'DiGi\.GIS\.YOLO\.UI\.Classes\.YOLOTrainingRunResult\.FailedStepNames')\.
+
+The name is prefixed with the enumeration, because the dataset and evaluation steps list their own failures by bare names such as `Train` and `Test` (the dataset splits), and a step called `Train` would be read as one of those.
+
+```csharp
+public static string YOLOTrainingStepName(DiGi.GIS.YOLO.UI.Enums.YOLOTrainingStep yOLOTrainingStep);
+```
+#### Parameters
+
+<a name='DiGi.GIS.YOLO.UI.Query.YOLOTrainingStepName(DiGi.GIS.YOLO.UI.Enums.YOLOTrainingStep).yOLOTrainingStep'></a>
+
+`yOLOTrainingStep` [YOLOTrainingStep](DiGi.GIS.YOLO.UI.Enums.md#DiGi.GIS.YOLO.UI.Enums.YOLOTrainingStep 'DiGi\.GIS\.YOLO\.UI\.Enums\.YOLOTrainingStep')
+
+The step\.
+
+#### Returns
+[System\.String](https://learn.microsoft.com/en-us/dotnet/api/system.string 'System\.String')  
+The name, such as `YOLOTrainingStep.Train`\.

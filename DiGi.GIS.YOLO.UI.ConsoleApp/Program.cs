@@ -19,7 +19,7 @@ namespace DiGi.GIS.YOLO.UI.ConsoleApp
         /// <summary>
         /// Executes the headless Year Built prediction pipeline from command-line arguments.
         /// </summary>
-        /// <param name="args">Optional arguments. With no flag, the first argument is the path of the prediction options file. A leading <c>--dataset</c>, <c>--check-labels</c> or <c>--evaluate-detector</c> selects a training dataset mode instead, and the argument after it is the path of the <see cref="YOLOTrainingDatasetOptions"/> file.</param>
+        /// <param name="args">Optional arguments. With no flag, the first argument is the path of the prediction options file. A leading <c>--dataset</c>, <c>--check-labels</c> or <c>--evaluate-detector</c> selects a training dataset mode instead, and the argument after it is the path of the <see cref="YOLOTrainingDatasetOptions"/> file. A leading <c>--train</c> runs the whole retraining, and the argument after it is the path of the <see cref="YOLOTrainingRunOptions"/> file.</param>
         /// <returns>One of <see cref="Enums.YearBuiltPredictionExitCode"/> as an integer. Only <see cref="Enums.YearBuiltPredictionExitCode.Succeeded"/> means a run finished; the rest say why one did not, and a caller reads them through that enumeration rather than against literals of its own.</returns>
         public static async Task<int> Main(string[] args)
         {
@@ -38,6 +38,11 @@ namespace DiGi.GIS.YOLO.UI.ConsoleApp
 
             // A leading flag selects one of the training dataset modes; no flag keeps the prediction run, so every
             // caller that passes just an options path - the tray application among them - is unchanged.
+            if (args.Length > 0 && args[0] == "--train")
+            {
+                return await TrainModeAsync(args.Length > 1 ? args[1] : null);
+            }
+
             if (args.Length > 0 && args[0].StartsWith("--", StringComparison.Ordinal))
             {
                 return await DatasetModeAsync(args[0], args.Length > 1 ? args[1] : null);
@@ -210,7 +215,7 @@ namespace DiGi.GIS.YOLO.UI.ConsoleApp
         /// <summary>
         /// The usage text printed when the arguments or the options cannot be read.
         /// </summary>
-        private const string Usage = "Usage: DiGi.GIS.YOLO.UI.ConsoleApp [path-to-options.json]\n       DiGi.GIS.YOLO.UI.ConsoleApp --dataset|--check-labels|--evaluate-detector [path-to-YOLOTrainingDatasetOptions.json]";
+        private const string Usage = "Usage: DiGi.GIS.YOLO.UI.ConsoleApp [path-to-options.json]\n       DiGi.GIS.YOLO.UI.ConsoleApp --dataset|--check-labels|--evaluate-detector [path-to-YOLOTrainingDatasetOptions.json]\n       DiGi.GIS.YOLO.UI.ConsoleApp --train [path-to-YOLOTrainingRunOptions.json]";
 
         /// <summary>
         /// Runs one of the YOLO training dataset modes: <c>--dataset</c> builds (or, with <see cref="YOLOTrainingDatasetOptions.CountOnly"/>, only counts) a training dataset from the deployed data, <c>--check-labels</c> checks its label boxes against the current detector, and <c>--evaluate-detector</c> compares weights files on its Test buildings.
@@ -463,6 +468,146 @@ namespace DiGi.GIS.YOLO.UI.ConsoleApp
                 Console.WriteLine($"[FATAL] Unhandled error: {exception.Message}");
                 Console.ResetColor();
                 Serilog.Modify.Log(exception, "Unhandled error in {Mode}", mode);
+                return (int)YearBuiltPredictionExitCode.Failed;
+            }
+            finally
+            {
+                Console.CancelKeyPress -= CancelKeyPress;
+                cancellationTokenSource.Dispose();
+            }
+        }
+
+        /// <summary>
+        /// Runs the <c>--train</c> mode: the dataset build, the label check, the training, the validation on the Test split and the detector evaluation as one run that stops at the first failed step.
+        /// <para>The start weights and the output weights are reported with their SHA-256 as soon as each is known, and the identities and the evaluation rows are printed again at the end, so the table that gates a candidate names exactly which file each row is. The exit codes are <see cref="YearBuiltPredictionExitCode"/>, mapped by <see cref="Query.YOLOTrainingRunExitCode(YOLOTrainingRunResult?)"/>.</para>
+        /// </summary>
+        /// <param name="path_Options">The path of the options file, or null for <see cref="Constants.FileName.YOLOTrainingRunOptions"/> beside the executable.</param>
+        /// <returns>One of <see cref="YearBuiltPredictionExitCode"/> as an integer.</returns>
+        private static async Task<int> TrainModeAsync(string? path_Options)
+        {
+            static int Fail(string message, YearBuiltPredictionExitCode yearBuiltPredictionExitCode)
+            {
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.WriteLine($"[ERROR] {message}");
+                Console.ResetColor();
+                Serilog.Modify.Log(Serilog.Enums.LogEventLevel.Error, message);
+                return (int)yearBuiltPredictionExitCode;
+            }
+
+            YOLOTrainingRunOptions? options = Query.YOLOTrainingRunOptions(path_Options);
+            if (options is null)
+            {
+                Console.WriteLine(Usage);
+                return Fail($"YOLO training run options could not be loaded from {(string.IsNullOrWhiteSpace(path_Options) ? "default location" : path_Options)}.", YearBuiltPredictionExitCode.Configuration);
+            }
+
+            GISWebAPIManager? gisWebAPIManager = null;
+            if (options.Steps is null || options.Steps.Count == 0 || options.Steps.Contains(YOLOTrainingStep.Dataset))
+            {
+                string? key = Query.Key();
+                if (string.IsNullOrWhiteSpace(key))
+                {
+                    return Fail($"WebAPI authorization key not found in '{Constants.FileName.GISWebAPIClientConfigurationFile}'.", YearBuiltPredictionExitCode.Authorization);
+                }
+
+                gisWebAPIManager = WebAPI.Create.GISWebAPIManager(key);
+                if (gisWebAPIManager is null)
+                {
+                    return Fail("Failed to initialize GISWebAPIManager with the provided key.", YearBuiltPredictionExitCode.Authorization);
+                }
+            }
+
+            // Not disposed through a using, for the same reason as the other modes: the handler outlives the statement.
+            CancellationTokenSource cancellationTokenSource = new();
+
+            void CancelKeyPress(object? sender, ConsoleCancelEventArgs eventArgs)
+            {
+                eventArgs.Cancel = true;
+                Console.ForegroundColor = ConsoleColor.Yellow;
+                Console.WriteLine("[INFO] Cancellation requested by user (Ctrl+C)...");
+                Console.ResetColor();
+                Serilog.Modify.Log(Serilog.Enums.LogEventLevel.Warning, "Cancellation requested by user");
+                cancellationTokenSource.Cancel();
+            }
+
+            Console.CancelKeyPress += CancelKeyPress;
+
+            try
+            {
+                Progress<long> progress = new(count =>
+                {
+                    Console.WriteLine(Create.ProgressMessage(count));
+                });
+
+                Progress<string> information = new(message =>
+                {
+                    Console.WriteLine($"[INFO] {message}");
+                });
+
+                YOLOTrainingRunResult? result = await gisWebAPIManager.RunYOLOTrainingAsync(options, progress, information, cancellationTokenSource.Token);
+                if (result is null)
+                {
+                    return Fail("The training run could not be attempted - see the log.", YearBuiltPredictionExitCode.Configuration);
+                }
+
+                Console.ForegroundColor = ConsoleColor.Yellow;
+                foreach (string message in result.Messages)
+                {
+                    Console.WriteLine($"[NOTE] {message}");
+                }
+
+                Console.ResetColor();
+
+                if (!string.IsNullOrWhiteSpace(result.StartWeightsSHA256) || !string.IsNullOrWhiteSpace(result.WeightsSHA256))
+                {
+                    Console.WriteLine("Role\tWeights\tSHA256");
+                    Console.WriteLine($"Start\t{result.StartWeightsPath}\t{result.StartWeightsSHA256}");
+                    Console.WriteLine($"Output\t{result.WeightsPath}\t{result.WeightsSHA256}");
+                }
+
+                if (result.MAP50 is not null || result.MAP50_95 is not null)
+                {
+                    Console.WriteLine(string.Format(System.Globalization.CultureInfo.InvariantCulture, "[INFO] Test mAP50 {0:0.000}, mAP50-95 {1:0.000}", result.MAP50, result.MAP50_95));
+                }
+
+                List<YOLODetectorEvaluation> yOLODetectorEvaluations = result.YOLODetectorEvaluations;
+                if (yOLODetectorEvaluations.Count != 0)
+                {
+                    Console.WriteLine("Weights\tSHA256\tSubset\tCount\tMAE\tRMSE\tExact");
+                    foreach (YOLODetectorEvaluation yOLODetectorEvaluation in yOLODetectorEvaluations)
+                    {
+                        Console.WriteLine(string.Format(System.Globalization.CultureInfo.InvariantCulture, "{0}\t{1}\t{2}\t{3}\t{4:0.000}\t{5:0.000}\t{6:0.000}", yOLODetectorEvaluation.WeightsPath, yOLODetectorEvaluation.SHA256, yOLODetectorEvaluation.Subset, yOLODetectorEvaluation.Count, yOLODetectorEvaluation.MeanAbsoluteError, yOLODetectorEvaluation.RootMeanSquareError, yOLODetectorEvaluation.ExactShare));
+                    }
+                }
+
+                YearBuiltPredictionExitCode yearBuiltPredictionExitCode = Query.YOLOTrainingRunExitCode(result);
+                if (yearBuiltPredictionExitCode != YearBuiltPredictionExitCode.Succeeded && yearBuiltPredictionExitCode != YearBuiltPredictionExitCode.Cancelled)
+                {
+                    Console.ForegroundColor = ConsoleColor.Red;
+                    Console.WriteLine($"[ERROR] Completed with {result.FailedStepNames.Count} failed step(s):");
+                    foreach (string failedStepName in result.FailedStepNames)
+                    {
+                        Console.WriteLine($"  - {failedStepName}");
+                    }
+
+                    Console.ResetColor();
+                }
+
+                return (int)yearBuiltPredictionExitCode;
+            }
+            catch (OperationCanceledException)
+            {
+                Console.ForegroundColor = ConsoleColor.Yellow;
+                Console.WriteLine("[INFO] Execution cancelled.");
+                Console.ResetColor();
+                return (int)YearBuiltPredictionExitCode.Cancelled;
+            }
+            catch (Exception exception)
+            {
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.WriteLine($"[FATAL] Unhandled error: {exception.Message}");
+                Console.ResetColor();
+                Serilog.Modify.Log(exception, "Unhandled error in --train");
                 return (int)YearBuiltPredictionExitCode.Failed;
             }
             finally

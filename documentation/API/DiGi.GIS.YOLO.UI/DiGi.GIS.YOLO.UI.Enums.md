@@ -97,6 +97,18 @@ The run started and one or more of its steps did not complete\. What it managed 
 
 The run was stopped before it finished\. What it had already written is committed\.
 
+<a name='DiGi.GIS.YOLO.UI.Enums.YearBuiltPredictionExitCode.Training'></a>
+
+`Training` 6
+
+The `--train` mode started the training and it did not produce weights, or it was refused before the interpreter started\. Earlier steps' outputs are written\.
+
+<a name='DiGi.GIS.YOLO.UI.Enums.YearBuiltPredictionExitCode.Validation'></a>
+
+`Validation` 7
+
+The `--train` mode trained weights, and their validation on the Test split did not complete\. The weights are written\.
+
 <a name='DiGi.GIS.YOLO.UI.Enums.YOLODetectorEvaluationSubset'></a>
 
 ## YOLODetectorEvaluationSubset Enum
@@ -119,3 +131,44 @@ Every Test building with at least one image\.
 `Clean` 1
 
 The Test buildings the `train8` detector cannot have seen \- Test and not Legacy\. A building whose Legacy decision could not be taken is not in it\.
+
+<a name='DiGi.GIS.YOLO.UI.Enums.YOLOTrainingStep'></a>
+
+## YOLOTrainingStep Enum
+
+Names one step of the `--train` console mode\. The steps always run in the order they are declared here, whatever order [Steps](DiGi.GIS.YOLO.UI.Classes.md#DiGi.GIS.YOLO.UI.Classes.YOLOTrainingRunOptions.Steps 'DiGi\.GIS\.YOLO\.UI\.Classes\.YOLOTrainingRunOptions\.Steps') lists them in\.
+
+```csharp
+public enum YOLOTrainingStep
+```
+### Fields
+
+<a name='DiGi.GIS.YOLO.UI.Enums.YOLOTrainingStep.Dataset'></a>
+
+`Dataset` 0
+
+Builds the training dataset, or appends to the folder that already exists\.
+
+<a name='DiGi.GIS.YOLO.UI.Enums.YOLOTrainingStep.LabelCheck'></a>
+
+`LabelCheck` 1
+
+Checks the labels of the dataset against the detector named by the dataset options\.
+
+<a name='DiGi.GIS.YOLO.UI.Enums.YOLOTrainingStep.Train'></a>
+
+`Train` 2
+
+Trains a detector from the start weights\.
+
+<a name='DiGi.GIS.YOLO.UI.Enums.YOLOTrainingStep.Validate'></a>
+
+`Validate` 3
+
+Validates the trained weights on the Test split of the dataset\.
+
+<a name='DiGi.GIS.YOLO.UI.Enums.YOLOTrainingStep.Evaluate'></a>
+
+`Evaluate` 4
+
+Scores every weights file of the dataset options, and the trained weights, on the Test buildings\.
