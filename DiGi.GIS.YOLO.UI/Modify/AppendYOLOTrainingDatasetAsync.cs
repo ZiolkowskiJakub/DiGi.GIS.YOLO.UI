@@ -112,6 +112,9 @@ namespace DiGi.GIS.YOLO.UI
             // command timeout. Sixty seconds is the whole budget there is: the manager's HttpClient times out there.
             PostOptions postOptions_Item = new() { RequestResult = true };
             PostOptions postOptions_Bulk = new() { RequestResult = true, Delay = TimeSpan.FromSeconds(60) };
+            // The cross-part reference duplicates is a global read - no county filter - sized against the server's 600 s
+            // commandtimeout, so it gets its own longer budget rather than the 60 s bulk page budget.
+            PostOptions postOptions_ReferenceDuplicates = new() { RequestResult = true, Delay = TimeSpan.FromSeconds(600) };
 
             Serilog.Modify.Log("{Method} started: {CountyCount} county part(s) {CountyIds}, output {OutputDirectory}, count only {CountOnly}, resume {Resume}", nameof(AppendYOLOTrainingDatasetAsync), countyIds.Count, string.Join(", ", countyIds), outputDirectory, countOnly, yOLOTrainingDatasetOptions.Resume);
 
@@ -364,7 +367,7 @@ namespace DiGi.GIS.YOLO.UI
             if (countOnly)
             {
                 // Global endpoint: read once, filtered to the parts of this run.
-                List<PostgreSQL.Classes.Building2DReferenceDuplicate>? building2DReferenceDuplicates = await Query.ReferenceDuplicatesAsync(gisWebAPIManager, yOLOTrainingDatasetOptions.ReferenceDuplicateLimit, postOptions_Bulk, cancellationToken);
+                List<PostgreSQL.Classes.Building2DReferenceDuplicate>? building2DReferenceDuplicates = await Query.ReferenceDuplicatesAsync(gisWebAPIManager, yOLOTrainingDatasetOptions.ReferenceDuplicateLimit, postOptions_ReferenceDuplicates, cancellationToken);
                 if (building2DReferenceDuplicates is null)
                 {
                     Fail(nameof(Query.ReferenceDuplicatesAsync), "The cross-part reference duplicates could not be read.");

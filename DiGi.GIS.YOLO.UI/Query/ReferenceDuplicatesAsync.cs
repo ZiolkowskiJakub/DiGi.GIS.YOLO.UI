@@ -3,6 +3,7 @@ using DiGi.GIS.WebAPI.Classes;
 using DiGi.WebAPI.Classes;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
@@ -38,12 +39,14 @@ namespace DiGi.GIS.YOLO.UI
 
             cancellationToken.ThrowIfCancellationRequested();
 
+            Stopwatch stopwatch = Stopwatch.StartNew();
             try
             {
                 PostResponse<List<Building2DReferenceDuplicate>?> postResponse = await DiGi.WebAPI.Query.GetAsync<List<Building2DReferenceDuplicate>>(httpClient, requestUri, postOptions ?? new PostOptions() { RequestResult = true, Delay = TimeSpan.FromSeconds(60) });
 
                 if (postResponse is null || !postResponse.Succeeded)
                 {
+                    Serilog.Modify.Log(Serilog.Enums.LogEventLevel.Warning, "The cross-part reference duplicates could not be read after {ElapsedSeconds} s (Succeeded: {Succeeded})", stopwatch.Elapsed.TotalSeconds, postResponse?.Succeeded ?? false);
                     return null;
                 }
 
@@ -51,8 +54,12 @@ namespace DiGi.GIS.YOLO.UI
             }
             catch (Exception exception) when (!cancellationToken.IsCancellationRequested)
             {
-                Serilog.Modify.Log(exception, "The cross-part reference duplicates could not be read");
+                Serilog.Modify.Log(exception, "The cross-part reference duplicates could not be read after {ElapsedSeconds} s", stopwatch.Elapsed.TotalSeconds);
                 return null;
+            }
+            finally
+            {
+                stopwatch.Stop();
             }
         }
     }
