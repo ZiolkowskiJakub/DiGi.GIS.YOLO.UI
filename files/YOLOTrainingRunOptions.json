@@ -35,6 +35,7 @@
   "Seed": 0,
   "Device": null,
   "PythonPath": null,
+  "ResumeTraining": false,
   "WorkingDirectory": null,
   "Steps": [
     "Dataset"

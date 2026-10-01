@@ -10,6 +10,7 @@ namespace DiGi.GIS.YOLO.UI.Classes
     /// <summary>
     /// What one <c>--train</c> run did: the identity of the weights it started from and of the weights it produced, and how they scored on the Test split.
     /// <para>Both identities are the SHA-256 of the file on disk, so a row of a comparison table names exactly which file it measures. <see cref="FailedStepNames"/> says whether every step that was asked for completed; the first failure stops the run.</para>
+    /// <para>A resumed run says so through <see cref="Resumed"/> and <see cref="ResumedFromEpoch"/> - an interrupted run is continued rather than restarted, and a resumed run is not bit-identical to an uninterrupted one.</para>
     /// </summary>
     public class YOLOTrainingRunResult : SerializableResult, IGISYOLOUISerializableObject
     {
@@ -33,6 +34,12 @@ namespace DiGi.GIS.YOLO.UI.Classes
 
         [JsonInclude, JsonPropertyName(nameof(RunName))]
         private readonly string? runName;
+
+        [JsonInclude, JsonPropertyName(nameof(Resumed))]
+        private readonly bool resumed;
+
+        [JsonInclude, JsonPropertyName(nameof(ResumedFromEpoch))]
+        private readonly int? resumedFromEpoch;
 
         [JsonInclude, JsonPropertyName(nameof(Start))]
         private readonly DateTimeOffset? start;
@@ -68,6 +75,8 @@ namespace DiGi.GIS.YOLO.UI.Classes
         /// <param name="messages">What the run has to say beyond its identities, or null for nothing.</param>
         /// <param name="start">When the run started.</param>
         /// <param name="end">When the run ended.</param>
+        /// <param name="resumed">Whether the run continued an interrupted training instead of starting from the beginning.</param>
+        /// <param name="resumedFromEpoch">The 1-based epoch the resumed run entered, or null for a fresh run, a run that was not resumed or one whose resume epoch was not read.</param>
         public YOLOTrainingRunResult(
             string? runName,
             string? startWeightsPath,
@@ -81,7 +90,9 @@ namespace DiGi.GIS.YOLO.UI.Classes
             IEnumerable<string>? failedStepNames,
             IEnumerable<string>? messages,
             DateTimeOffset? start,
-            DateTimeOffset? end)
+            DateTimeOffset? end,
+            bool resumed = false,
+            int? resumedFromEpoch = null)
         {
             this.runName = runName;
             this.startWeightsPath = startWeightsPath;
@@ -115,6 +126,8 @@ namespace DiGi.GIS.YOLO.UI.Classes
 
             this.start = start;
             this.end = end;
+            this.resumed = resumed;
+            this.resumedFromEpoch = resumedFromEpoch;
         }
 
         /// <summary>
@@ -132,6 +145,8 @@ namespace DiGi.GIS.YOLO.UI.Classes
                 mAP50 = yOLOTrainingRunResult.mAP50;
                 mAP50_95 = yOLOTrainingRunResult.mAP50_95;
                 messages = [.. yOLOTrainingRunResult.messages];
+                resumed = yOLOTrainingRunResult.resumed;
+                resumedFromEpoch = yOLOTrainingRunResult.resumedFromEpoch;
                 runName = yOLOTrainingRunResult.runName;
                 start = yOLOTrainingRunResult.start;
                 startWeightsPath = yOLOTrainingRunResult.startWeightsPath;
@@ -220,6 +235,30 @@ namespace DiGi.GIS.YOLO.UI.Classes
             get
             {
                 return [.. messages];
+            }
+        }
+
+        /// <summary>
+        /// Gets whether the run continued an interrupted training instead of starting from the beginning.
+        /// </summary>
+        [JsonIgnore]
+        public bool Resumed
+        {
+            get
+            {
+                return resumed;
+            }
+        }
+
+        /// <summary>
+        /// Gets the 1-based epoch the resumed run entered, or null for a fresh run, a run that was not resumed or one whose resume epoch was not read.
+        /// </summary>
+        [JsonIgnore]
+        public int? ResumedFromEpoch
+        {
+            get
+            {
+                return resumedFromEpoch;
             }
         }
 

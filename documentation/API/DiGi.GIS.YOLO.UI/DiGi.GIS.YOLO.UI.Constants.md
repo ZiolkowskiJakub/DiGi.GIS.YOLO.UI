@@ -102,6 +102,21 @@ public const string PredictionImages = "images";
 #### Field Value
 [System\.String](https://learn.microsoft.com/en-us/dotnet/api/system.string 'System\.String')
 
+<a name='DiGi.GIS.YOLO.UI.Constants.DirectoryName.Weights'></a>
+
+## DirectoryName\.Weights Field
+
+Gets the name of the folder inside a training run that ultralytics writes the checkpoints it can resume from into\.
+
+Holds `last.pt`, the checkpoint a resume continues, and the per-epoch checkpoints a run with `save_period` leaves behind.
+
+```csharp
+public const string Weights = "weights";
+```
+
+#### Field Value
+[System\.String](https://learn.microsoft.com/en-us/dotnet/api/system.string 'System\.String')
+
 <a name='DiGi.GIS.YOLO.UI.Constants.FileName'></a>
 
 ## FileName Class
@@ -138,6 +153,21 @@ Gets the default filename of the configuration file for the Web API client\.
 
 ```csharp
 public const string GISWebAPIClientConfigurationFile = "GIS_WebAPI_Client.conf";
+```
+
+#### Field Value
+[System\.String](https://learn.microsoft.com/en-us/dotnet/api/system.string 'System\.String')
+
+<a name='DiGi.GIS.YOLO.UI.Constants.FileName.LastWeights'></a>
+
+## FileName\.LastWeights Field
+
+Gets the name of the checkpoint ultralytics writes into a run's `weights` folder and keeps up to date after every epoch\.
+
+A resume continues this file, so a run whose folder holds it and no completed `<RunName>.pt` is an interrupted run.
+
+```csharp
+public const string LastWeights = "last.pt";
 ```
 
 #### Field Value

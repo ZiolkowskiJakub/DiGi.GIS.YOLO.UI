@@ -176,7 +176,7 @@ These are rough figures from one sample building, meant to give the order of mag
 
 1. `Dataset` — `--dataset`: builds the training dataset, or appends to the folder that already exists (resumable).
 2. `LabelCheck` — `--check-labels`.
-3. `Train` — `DiGi.YOLO` `Modify.Train` from `StartWeightsPath`, a `.pt` checkpoint (an earlier detector) or the base `yolo26x.pt`.
+3. `Train` — `DiGi.YOLO` `Modify.Train` from `StartWeightsPath`, a `.pt` checkpoint (an earlier detector) or the base `yolo26x.pt`. With `ResumeTraining` it continues the run's own `weights\last.pt` instead.
 4. `Validate` — `Modify.Validate` on the Test split. Without `Train` it measures the start weights, the baseline a candidate is compared with.
 5. `Evaluate` — `--evaluate-detector` over `DatasetOptions.WeightsPaths` plus the trained weights.
 
@@ -189,11 +189,31 @@ Progress lines are the same `[PROGRESS]` / `[INFO]` lines as the other modes. Th
 | Member | Default |
 |---|---|
 | `DatasetOptions` | none — required, with an absolute `OutputDirectory`; `PythonPath` and `WorkingDirectory` of the run take precedence over its own |
-| `StartWeightsPath` | none — required for `Train` and `Validate` |
+| `StartWeightsPath` | none — required for `Train` and `Validate`; ignored when `ResumeTraining` is set |
+| `ResumeTraining` | `false` — continue the interrupted run named by `ProjectDirectory` + `RunName` instead of starting a new one (see below) |
 | `RunName`, `ProjectDirectory` | none — required for `Train` (the folder is absolute) |
-| `Epochs` / `Patience` / `ImageSize` / `Batch` / `Seed` | `150` / `50` / `640` / `16` / `0` (the `DiGi.YOLO` README) |
+| `Epochs` / `Patience` / `ImageSize` / `Batch` / `Seed` | `150` / `50` / `640` / `16` / `0` (the `DiGi.YOLO` README); ignored when `ResumeTraining` is set |
 | `Device`, `PythonPath`, `WorkingDirectory` | `null` |
 | `Steps` | `null` — all; the committed template lists only `Dataset`, and counts |
+
+### Recovering an interrupted run — `ResumeTraining`
+
+Set `ResumeTraining` to `true` to continue a run whose training was stopped instead of starting a new one. The run keeps its name: it is identified by `ProjectDirectory` + `RunName` and continues `<ProjectDirectory>\<RunName>\weights\last.pt` at the next epoch, in the same folder. Nothing is copied or renamed by hand, and after the training the runner copies, re-checks, validates and evaluates exactly as a fresh run does.
+
+- `StartWeightsPath`, `Epochs`, `Patience`, `ImageSize`, `Batch` and `Seed` are **ignored** and logged as ignored — the checkpoint restores them, and the epoch ceiling is fixed by the checkpoint. A different ceiling is a new run, not a resume. `Device`, `PythonPath`, `WorkingDirectory`, `DatasetOptions` and `Steps` still apply.
+- `Steps` must name `Train` and must **not** name `Dataset`: a resume never rebuilds the dataset the checkpoint was trained on. `null` (all steps) includes `Dataset`, so list the steps explicitly, for example `["Train", "Validate", "Evaluate"]`.
+- A resumed run is **not bit-identical** to an uninterrupted one (the dataloader RNG restarts). The log and the result say `Resuming … from epoch N of M`, and the final table's `Start` row reads `Start (resume of epoch N)`.
+
+The run is refused before the training starts, with the reason named by its option (exit code `1`), when:
+
+| Check | Refusal |
+|---|---|
+| `Train` step not selected | `ResumeTraining` without training |
+| `Dataset` step selected | a resume never rebuilds the dataset it was trained on |
+| `<ProjectDirectory>\<RunName>` missing, or no `weights\last.pt` | nothing to resume |
+| `<ProjectDirectory>\<RunName>\<RunName>.pt` exists | the run completed; choose a new run name |
+| the checkpoint cannot be read, is finished, or records a dataset that is gone | the checkpoint is not resumable |
+| the checkpoint records a different project or name | the folder was moved or renamed; ultralytics would write elsewhere |
 
 ### Exit codes of `--train`
 
@@ -202,7 +222,7 @@ The prediction run's codes, plus two:
 | Code | Meaning |
 |---|---|
 | 0 | every step that was asked for completed |
-| 1 | an option cannot be used (options, dataset, start weights, run name, project folder) or the dataset step refused its scope |
+| 1 | an option cannot be used (options, dataset, start weights, run name, project folder, resume) or the dataset step refused its scope |
 | 2 | the interpreter or weights are missing, or the interpreter cannot run the training |
 | 3 | no Web API key (only when `Dataset` runs) |
 | 4 | the dataset build, the label check or the evaluation failed while running |

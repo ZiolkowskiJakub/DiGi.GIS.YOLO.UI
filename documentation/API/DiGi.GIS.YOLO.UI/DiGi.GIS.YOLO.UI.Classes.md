@@ -2659,6 +2659,8 @@ Provides the settings of the `--train` console mode: the training dataset it bui
 
 The dataset half is a nested [YOLOTrainingDatasetOptions](DiGi.GIS.YOLO.UI.Classes.md#DiGi.GIS.YOLO.UI.Classes.YOLOTrainingDatasetOptions 'DiGi\.GIS\.YOLO\.UI\.Classes\.YOLOTrainingDatasetOptions') rather than a copy of its members, so one dataset file keeps meaning the same thing to `--dataset` and `--train`. The interpreter and working directory named here take precedence over the nested ones.
 
+[ResumeTraining](DiGi.GIS.YOLO.UI.Classes.md#DiGi.GIS.YOLO.UI.Classes.YOLOTrainingRunOptions.ResumeTraining 'DiGi\.GIS\.YOLO\.UI\.Classes\.YOLOTrainingRunOptions\.ResumeTraining') turns the run into a continuation of an interrupted one, whose hyper-parameters are restored from the checkpoint instead of being read here.
+
 The defaults of the hyper-parameters are the ones in the README of `DiGi.YOLO`. [StartWeightsPath](DiGi.GIS.YOLO.UI.Classes.md#DiGi.GIS.YOLO.UI.Classes.YOLOTrainingRunOptions.StartWeightsPath 'DiGi\.GIS\.YOLO\.UI\.Classes\.YOLOTrainingRunOptions\.StartWeightsPath'), [RunName](DiGi.GIS.YOLO.UI.Classes.md#DiGi.GIS.YOLO.UI.Classes.YOLOTrainingRunOptions.RunName 'DiGi\.GIS\.YOLO\.UI\.Classes\.YOLOTrainingRunOptions\.RunName') and [ProjectDirectory](DiGi.GIS.YOLO.UI.Classes.md#DiGi.GIS.YOLO.UI.Classes.YOLOTrainingRunOptions.ProjectDirectory 'DiGi\.GIS\.YOLO\.UI\.Classes\.YOLOTrainingRunOptions\.ProjectDirectory') have none, so a run never starts from weights nobody named or writes into a folder nobody chose.
 
 ```csharp
@@ -2721,6 +2723,8 @@ The JSON object containing the configuration settings\.
 
 Gets or sets the training batch size\.
 
+Ignored when [ResumeTraining](DiGi.GIS.YOLO.UI.Classes.md#DiGi.GIS.YOLO.UI.Classes.YOLOTrainingRunOptions.ResumeTraining 'DiGi\.GIS\.YOLO\.UI\.Classes\.YOLOTrainingRunOptions\.ResumeTraining') is set: the checkpoint restores it.
+
 ```csharp
 public int Batch { get; set; }
 ```
@@ -2760,6 +2764,8 @@ public string? Device { get; set; }
 
 Gets or sets the upper bound of training epochs\.
 
+Ignored when [ResumeTraining](DiGi.GIS.YOLO.UI.Classes.md#DiGi.GIS.YOLO.UI.Classes.YOLOTrainingRunOptions.ResumeTraining 'DiGi\.GIS\.YOLO\.UI\.Classes\.YOLOTrainingRunOptions\.ResumeTraining') is set: the ceiling is restored from the checkpoint, and a different one is a new run.
+
 ```csharp
 public int Epochs { get; set; }
 ```
@@ -2773,6 +2779,8 @@ public int Epochs { get; set; }
 
 Gets or sets the image size, in pixels, of the training and validation\.
 
+Ignored when [ResumeTraining](DiGi.GIS.YOLO.UI.Classes.md#DiGi.GIS.YOLO.UI.Classes.YOLOTrainingRunOptions.ResumeTraining 'DiGi\.GIS\.YOLO\.UI\.Classes\.YOLOTrainingRunOptions\.ResumeTraining') is set: the checkpoint restores it.
+
 ```csharp
 public int ImageSize { get; set; }
 ```
@@ -2785,6 +2793,8 @@ public int ImageSize { get; set; }
 ## YOLOTrainingRunOptions\.Patience Property
 
 Gets or sets the number of epochs without improvement after which the training stops early\.
+
+Ignored when [ResumeTraining](DiGi.GIS.YOLO.UI.Classes.md#DiGi.GIS.YOLO.UI.Classes.YOLOTrainingRunOptions.ResumeTraining 'DiGi\.GIS\.YOLO\.UI\.Classes\.YOLOTrainingRunOptions\.ResumeTraining') is set: the patience counter is restored from the checkpoint.
 
 ```csharp
 public int Patience { get; set; }
@@ -2819,13 +2829,30 @@ public string? PythonPath { get; set; }
 #### Property Value
 [System\.String](https://learn.microsoft.com/en-us/dotnet/api/system.string 'System\.String')
 
+<a name='DiGi.GIS.YOLO.UI.Classes.YOLOTrainingRunOptions.ResumeTraining'></a>
+
+## YOLOTrainingRunOptions\.ResumeTraining Property
+
+Gets or sets whether the run continues the interrupted training in [ProjectDirectory](DiGi.GIS.YOLO.UI.Classes.md#DiGi.GIS.YOLO.UI.Classes.YOLOTrainingRunOptions.ProjectDirectory 'DiGi\.GIS\.YOLO\.UI\.Classes\.YOLOTrainingRunOptions\.ProjectDirectory')\\[RunName](DiGi.GIS.YOLO.UI.Classes.md#DiGi.GIS.YOLO.UI.Classes.YOLOTrainingRunOptions.RunName 'DiGi\.GIS\.YOLO\.UI\.Classes\.YOLOTrainingRunOptions\.RunName') instead of starting a new one\.
+
+Requires the [Train](DiGi.GIS.YOLO.UI.Enums.md#DiGi.GIS.YOLO.UI.Enums.YOLOTrainingStep.Train 'DiGi\.GIS\.YOLO\.UI\.Enums\.YOLOTrainingStep\.Train') step and refuses a selected [Dataset](DiGi.GIS.YOLO.UI.Enums.md#DiGi.GIS.YOLO.UI.Enums.YOLOTrainingStep.Dataset 'DiGi\.GIS\.YOLO\.UI\.Enums\.YOLOTrainingStep\.Dataset') step, which would rebuild the dataset the checkpoint was trained on. When set, the run is identified by [ProjectDirectory](DiGi.GIS.YOLO.UI.Classes.md#DiGi.GIS.YOLO.UI.Classes.YOLOTrainingRunOptions.ProjectDirectory 'DiGi\.GIS\.YOLO\.UI\.Classes\.YOLOTrainingRunOptions\.ProjectDirectory') and [RunName](DiGi.GIS.YOLO.UI.Classes.md#DiGi.GIS.YOLO.UI.Classes.YOLOTrainingRunOptions.RunName 'DiGi\.GIS\.YOLO\.UI\.Classes\.YOLOTrainingRunOptions\.RunName'), and [StartWeightsPath](DiGi.GIS.YOLO.UI.Classes.md#DiGi.GIS.YOLO.UI.Classes.YOLOTrainingRunOptions.StartWeightsPath 'DiGi\.GIS\.YOLO\.UI\.Classes\.YOLOTrainingRunOptions\.StartWeightsPath'), [Epochs](DiGi.GIS.YOLO.UI.Classes.md#DiGi.GIS.YOLO.UI.Classes.YOLOTrainingRunOptions.Epochs 'DiGi\.GIS\.YOLO\.UI\.Classes\.YOLOTrainingRunOptions\.Epochs'), [Patience](DiGi.GIS.YOLO.UI.Classes.md#DiGi.GIS.YOLO.UI.Classes.YOLOTrainingRunOptions.Patience 'DiGi\.GIS\.YOLO\.UI\.Classes\.YOLOTrainingRunOptions\.Patience'), [ImageSize](DiGi.GIS.YOLO.UI.Classes.md#DiGi.GIS.YOLO.UI.Classes.YOLOTrainingRunOptions.ImageSize 'DiGi\.GIS\.YOLO\.UI\.Classes\.YOLOTrainingRunOptions\.ImageSize'), [Batch](DiGi.GIS.YOLO.UI.Classes.md#DiGi.GIS.YOLO.UI.Classes.YOLOTrainingRunOptions.Batch 'DiGi\.GIS\.YOLO\.UI\.Classes\.YOLOTrainingRunOptions\.Batch') and [Seed](DiGi.GIS.YOLO.UI.Classes.md#DiGi.GIS.YOLO.UI.Classes.YOLOTrainingRunOptions.Seed 'DiGi\.GIS\.YOLO\.UI\.Classes\.YOLOTrainingRunOptions\.Seed') are ignored and logged as ignored - the checkpoint restores them. [Device](DiGi.GIS.YOLO.UI.Classes.md#DiGi.GIS.YOLO.UI.Classes.YOLOTrainingRunOptions.Device 'DiGi\.GIS\.YOLO\.UI\.Classes\.YOLOTrainingRunOptions\.Device'), [PythonPath](DiGi.GIS.YOLO.UI.Classes.md#DiGi.GIS.YOLO.UI.Classes.YOLOTrainingRunOptions.PythonPath 'DiGi\.GIS\.YOLO\.UI\.Classes\.YOLOTrainingRunOptions\.PythonPath'), [WorkingDirectory](DiGi.GIS.YOLO.UI.Classes.md#DiGi.GIS.YOLO.UI.Classes.YOLOTrainingRunOptions.WorkingDirectory 'DiGi\.GIS\.YOLO\.UI\.Classes\.YOLOTrainingRunOptions\.WorkingDirectory'), [Steps](DiGi.GIS.YOLO.UI.Classes.md#DiGi.GIS.YOLO.UI.Classes.YOLOTrainingRunOptions.Steps 'DiGi\.GIS\.YOLO\.UI\.Classes\.YOLOTrainingRunOptions\.Steps') and [DatasetOptions](DiGi.GIS.YOLO.UI.Classes.md#DiGi.GIS.YOLO.UI.Classes.YOLOTrainingRunOptions.DatasetOptions 'DiGi\.GIS\.YOLO\.UI\.Classes\.YOLOTrainingRunOptions\.DatasetOptions') still apply, and the epoch ceiling is fixed by the checkpoint.
+
+This is not [Resume](DiGi.GIS.YOLO.UI.Classes.md#DiGi.GIS.YOLO.UI.Classes.YOLOTrainingDatasetOptions.Resume 'DiGi\.GIS\.YOLO\.UI\.Classes\.YOLOTrainingDatasetOptions\.Resume'), which resumes the dataset build - a different thing.
+
+```csharp
+public bool ResumeTraining { get; set; }
+```
+
+#### Property Value
+[System\.Boolean](https://learn.microsoft.com/en-us/dotnet/api/system.boolean 'System\.Boolean')
+
 <a name='DiGi.GIS.YOLO.UI.Classes.YOLOTrainingRunOptions.RunName'></a>
 
 ## YOLOTrainingRunOptions\.RunName Property
 
 Gets or sets the name of the run: the name of its folder under [ProjectDirectory](DiGi.GIS.YOLO.UI.Classes.md#DiGi.GIS.YOLO.UI.Classes.YOLOTrainingRunOptions.ProjectDirectory 'DiGi\.GIS\.YOLO\.UI\.Classes\.YOLOTrainingRunOptions\.ProjectDirectory') and of the weights file copied out of it, `<RunName>.pt`\.
 
-A name that already has a folder or a weights file is refused before anything starts, so a run never overwrites an earlier one, and `model` is refused so the production weights are never a target.
+A name that already has a weights file is refused before anything starts, so a run never overwrites an earlier one, and `model` is refused so the production weights are never a target. On a [ResumeTraining](DiGi.GIS.YOLO.UI.Classes.md#DiGi.GIS.YOLO.UI.Classes.YOLOTrainingRunOptions.ResumeTraining 'DiGi\.GIS\.YOLO\.UI\.Classes\.YOLOTrainingRunOptions\.ResumeTraining') run the folder is expected to exist - only the weights file is still refused, because it marks the run as completed.
 
 ```csharp
 public string? RunName { get; set; }
@@ -2840,6 +2867,8 @@ public string? RunName { get; set; }
 
 Gets or sets the seed of the training\.
 
+Ignored when [ResumeTraining](DiGi.GIS.YOLO.UI.Classes.md#DiGi.GIS.YOLO.UI.Classes.YOLOTrainingRunOptions.ResumeTraining 'DiGi\.GIS\.YOLO\.UI\.Classes\.YOLOTrainingRunOptions\.ResumeTraining') is set: the checkpoint restores it.
+
 ```csharp
 public int Seed { get; set; }
 ```
@@ -2852,6 +2881,8 @@ public int Seed { get; set; }
 ## YOLOTrainingRunOptions\.StartWeightsPath Property
 
 Gets or sets the weights the training starts from: a `.pt` checkpoint, either an earlier detector or the base `yolo26x.pt`\.
+
+Ignored when [ResumeTraining](DiGi.GIS.YOLO.UI.Classes.md#DiGi.GIS.YOLO.UI.Classes.YOLOTrainingRunOptions.ResumeTraining 'DiGi\.GIS\.YOLO\.UI\.Classes\.YOLOTrainingRunOptions\.ResumeTraining') is set: the run continues the interrupted checkpoint in its own folder instead.
 
 ```csharp
 public string? StartWeightsPath { get; set; }
@@ -2894,6 +2925,8 @@ What one `--train` run did: the identity of the weights it started from and of t
 
 Both identities are the SHA-256 of the file on disk, so a row of a comparison table names exactly which file it measures. [FailedStepNames](DiGi.GIS.YOLO.UI.Classes.md#DiGi.GIS.YOLO.UI.Classes.YOLOTrainingRunResult.FailedStepNames 'DiGi\.GIS\.YOLO\.UI\.Classes\.YOLOTrainingRunResult\.FailedStepNames') says whether every step that was asked for completed; the first failure stops the run.
 
+A resumed run says so through [Resumed](DiGi.GIS.YOLO.UI.Classes.md#DiGi.GIS.YOLO.UI.Classes.YOLOTrainingRunResult.Resumed 'DiGi\.GIS\.YOLO\.UI\.Classes\.YOLOTrainingRunResult\.Resumed') and [ResumedFromEpoch](DiGi.GIS.YOLO.UI.Classes.md#DiGi.GIS.YOLO.UI.Classes.YOLOTrainingRunResult.ResumedFromEpoch 'DiGi\.GIS\.YOLO\.UI\.Classes\.YOLOTrainingRunResult\.ResumedFromEpoch') - an interrupted run is continued rather than restarted, and a resumed run is not bit-identical to an uninterrupted one.
+
 ```csharp
 public class YOLOTrainingRunResult : DiGi.Core.Classes.SerializableResult, DiGi.GIS.YOLO.UI.Interfaces.IGISYOLOUISerializableObject, DiGi.GIS.YOLO.UI.Interfaces.IGISYOLOUIObject, DiGi.Core.Interfaces.IObject, DiGi.Core.Interfaces.ISerializableObject, DiGi.Core.Interfaces.ICloneableObject<DiGi.Core.Interfaces.ISerializableObject>, DiGi.Core.Interfaces.ICloneableObject
 ```
@@ -2920,94 +2953,106 @@ public YOLOTrainingRunResult(DiGi.GIS.YOLO.UI.Classes.YOLOTrainingRunResult? yOL
 
 The [YOLOTrainingRunResult](DiGi.GIS.YOLO.UI.Classes.md#DiGi.GIS.YOLO.UI.Classes.YOLOTrainingRunResult 'DiGi\.GIS\.YOLO\.UI\.Classes\.YOLOTrainingRunResult') to copy from\.
 
-<a name='DiGi.GIS.YOLO.UI.Classes.YOLOTrainingRunResult.YOLOTrainingRunResult(string,string,string,string,string,System.Nullable_double_,System.Nullable_double_,System.Collections.Generic.IEnumerable_DiGi.GIS.YOLO.UI.Classes.YOLODetectorEvaluation_,bool,System.Collections.Generic.IEnumerable_string_,System.Collections.Generic.IEnumerable_string_,System.Nullable_System.DateTimeOffset_,System.Nullable_System.DateTimeOffset_)'></a>
+<a name='DiGi.GIS.YOLO.UI.Classes.YOLOTrainingRunResult.YOLOTrainingRunResult(string,string,string,string,string,System.Nullable_double_,System.Nullable_double_,System.Collections.Generic.IEnumerable_DiGi.GIS.YOLO.UI.Classes.YOLODetectorEvaluation_,bool,System.Collections.Generic.IEnumerable_string_,System.Collections.Generic.IEnumerable_string_,System.Nullable_System.DateTimeOffset_,System.Nullable_System.DateTimeOffset_,bool,System.Nullable_int_)'></a>
 
-## YOLOTrainingRunResult\(string, string, string, string, string, Nullable\<double\>, Nullable\<double\>, IEnumerable\<YOLODetectorEvaluation\>, bool, IEnumerable\<string\>, IEnumerable\<string\>, Nullable\<DateTimeOffset\>, Nullable\<DateTimeOffset\>\) Constructor
+## YOLOTrainingRunResult\(string, string, string, string, string, Nullable\<double\>, Nullable\<double\>, IEnumerable\<YOLODetectorEvaluation\>, bool, IEnumerable\<string\>, IEnumerable\<string\>, Nullable\<DateTimeOffset\>, Nullable\<DateTimeOffset\>, bool, Nullable\<int\>\) Constructor
 
 Initializes a new instance of the [YOLOTrainingRunResult](DiGi.GIS.YOLO.UI.Classes.md#DiGi.GIS.YOLO.UI.Classes.YOLOTrainingRunResult 'DiGi\.GIS\.YOLO\.UI\.Classes\.YOLOTrainingRunResult') class\.
 
 ```csharp
-public YOLOTrainingRunResult(string? runName, string? startWeightsPath, string? startWeightsSHA256, string? weightsPath, string? weightsSHA256, System.Nullable<double> mAP50, System.Nullable<double> mAP50_95, System.Collections.Generic.IEnumerable<DiGi.GIS.YOLO.UI.Classes.YOLODetectorEvaluation>? yOLODetectorEvaluations, bool cancelled, System.Collections.Generic.IEnumerable<string>? failedStepNames, System.Collections.Generic.IEnumerable<string>? messages, System.Nullable<System.DateTimeOffset> start, System.Nullable<System.DateTimeOffset> end);
+public YOLOTrainingRunResult(string? runName, string? startWeightsPath, string? startWeightsSHA256, string? weightsPath, string? weightsSHA256, System.Nullable<double> mAP50, System.Nullable<double> mAP50_95, System.Collections.Generic.IEnumerable<DiGi.GIS.YOLO.UI.Classes.YOLODetectorEvaluation>? yOLODetectorEvaluations, bool cancelled, System.Collections.Generic.IEnumerable<string>? failedStepNames, System.Collections.Generic.IEnumerable<string>? messages, System.Nullable<System.DateTimeOffset> start, System.Nullable<System.DateTimeOffset> end, bool resumed=false, System.Nullable<int> resumedFromEpoch=null);
 ```
 #### Parameters
 
-<a name='DiGi.GIS.YOLO.UI.Classes.YOLOTrainingRunResult.YOLOTrainingRunResult(string,string,string,string,string,System.Nullable_double_,System.Nullable_double_,System.Collections.Generic.IEnumerable_DiGi.GIS.YOLO.UI.Classes.YOLODetectorEvaluation_,bool,System.Collections.Generic.IEnumerable_string_,System.Collections.Generic.IEnumerable_string_,System.Nullable_System.DateTimeOffset_,System.Nullable_System.DateTimeOffset_).runName'></a>
+<a name='DiGi.GIS.YOLO.UI.Classes.YOLOTrainingRunResult.YOLOTrainingRunResult(string,string,string,string,string,System.Nullable_double_,System.Nullable_double_,System.Collections.Generic.IEnumerable_DiGi.GIS.YOLO.UI.Classes.YOLODetectorEvaluation_,bool,System.Collections.Generic.IEnumerable_string_,System.Collections.Generic.IEnumerable_string_,System.Nullable_System.DateTimeOffset_,System.Nullable_System.DateTimeOffset_,bool,System.Nullable_int_).runName'></a>
 
 `runName` [System\.String](https://learn.microsoft.com/en-us/dotnet/api/system.string 'System\.String')
 
 The name of the run\.
 
-<a name='DiGi.GIS.YOLO.UI.Classes.YOLOTrainingRunResult.YOLOTrainingRunResult(string,string,string,string,string,System.Nullable_double_,System.Nullable_double_,System.Collections.Generic.IEnumerable_DiGi.GIS.YOLO.UI.Classes.YOLODetectorEvaluation_,bool,System.Collections.Generic.IEnumerable_string_,System.Collections.Generic.IEnumerable_string_,System.Nullable_System.DateTimeOffset_,System.Nullable_System.DateTimeOffset_).startWeightsPath'></a>
+<a name='DiGi.GIS.YOLO.UI.Classes.YOLOTrainingRunResult.YOLOTrainingRunResult(string,string,string,string,string,System.Nullable_double_,System.Nullable_double_,System.Collections.Generic.IEnumerable_DiGi.GIS.YOLO.UI.Classes.YOLODetectorEvaluation_,bool,System.Collections.Generic.IEnumerable_string_,System.Collections.Generic.IEnumerable_string_,System.Nullable_System.DateTimeOffset_,System.Nullable_System.DateTimeOffset_,bool,System.Nullable_int_).startWeightsPath'></a>
 
 `startWeightsPath` [System\.String](https://learn.microsoft.com/en-us/dotnet/api/system.string 'System\.String')
 
 The weights the training started from\.
 
-<a name='DiGi.GIS.YOLO.UI.Classes.YOLOTrainingRunResult.YOLOTrainingRunResult(string,string,string,string,string,System.Nullable_double_,System.Nullable_double_,System.Collections.Generic.IEnumerable_DiGi.GIS.YOLO.UI.Classes.YOLODetectorEvaluation_,bool,System.Collections.Generic.IEnumerable_string_,System.Collections.Generic.IEnumerable_string_,System.Nullable_System.DateTimeOffset_,System.Nullable_System.DateTimeOffset_).startWeightsSHA256'></a>
+<a name='DiGi.GIS.YOLO.UI.Classes.YOLOTrainingRunResult.YOLOTrainingRunResult(string,string,string,string,string,System.Nullable_double_,System.Nullable_double_,System.Collections.Generic.IEnumerable_DiGi.GIS.YOLO.UI.Classes.YOLODetectorEvaluation_,bool,System.Collections.Generic.IEnumerable_string_,System.Collections.Generic.IEnumerable_string_,System.Nullable_System.DateTimeOffset_,System.Nullable_System.DateTimeOffset_,bool,System.Nullable_int_).startWeightsSHA256'></a>
 
 `startWeightsSHA256` [System\.String](https://learn.microsoft.com/en-us/dotnet/api/system.string 'System\.String')
 
 The SHA\-256 of the start weights, or null when they were not read\.
 
-<a name='DiGi.GIS.YOLO.UI.Classes.YOLOTrainingRunResult.YOLOTrainingRunResult(string,string,string,string,string,System.Nullable_double_,System.Nullable_double_,System.Collections.Generic.IEnumerable_DiGi.GIS.YOLO.UI.Classes.YOLODetectorEvaluation_,bool,System.Collections.Generic.IEnumerable_string_,System.Collections.Generic.IEnumerable_string_,System.Nullable_System.DateTimeOffset_,System.Nullable_System.DateTimeOffset_).weightsPath'></a>
+<a name='DiGi.GIS.YOLO.UI.Classes.YOLOTrainingRunResult.YOLOTrainingRunResult(string,string,string,string,string,System.Nullable_double_,System.Nullable_double_,System.Collections.Generic.IEnumerable_DiGi.GIS.YOLO.UI.Classes.YOLODetectorEvaluation_,bool,System.Collections.Generic.IEnumerable_string_,System.Collections.Generic.IEnumerable_string_,System.Nullable_System.DateTimeOffset_,System.Nullable_System.DateTimeOffset_,bool,System.Nullable_int_).weightsPath'></a>
 
 `weightsPath` [System\.String](https://learn.microsoft.com/en-us/dotnet/api/system.string 'System\.String')
 
 The new weights file the trained weights were copied to, or null when there are none\.
 
-<a name='DiGi.GIS.YOLO.UI.Classes.YOLOTrainingRunResult.YOLOTrainingRunResult(string,string,string,string,string,System.Nullable_double_,System.Nullable_double_,System.Collections.Generic.IEnumerable_DiGi.GIS.YOLO.UI.Classes.YOLODetectorEvaluation_,bool,System.Collections.Generic.IEnumerable_string_,System.Collections.Generic.IEnumerable_string_,System.Nullable_System.DateTimeOffset_,System.Nullable_System.DateTimeOffset_).weightsSHA256'></a>
+<a name='DiGi.GIS.YOLO.UI.Classes.YOLOTrainingRunResult.YOLOTrainingRunResult(string,string,string,string,string,System.Nullable_double_,System.Nullable_double_,System.Collections.Generic.IEnumerable_DiGi.GIS.YOLO.UI.Classes.YOLODetectorEvaluation_,bool,System.Collections.Generic.IEnumerable_string_,System.Collections.Generic.IEnumerable_string_,System.Nullable_System.DateTimeOffset_,System.Nullable_System.DateTimeOffset_,bool,System.Nullable_int_).weightsSHA256'></a>
 
 `weightsSHA256` [System\.String](https://learn.microsoft.com/en-us/dotnet/api/system.string 'System\.String')
 
 The SHA\-256 of that file, or null when there is none\.
 
-<a name='DiGi.GIS.YOLO.UI.Classes.YOLOTrainingRunResult.YOLOTrainingRunResult(string,string,string,string,string,System.Nullable_double_,System.Nullable_double_,System.Collections.Generic.IEnumerable_DiGi.GIS.YOLO.UI.Classes.YOLODetectorEvaluation_,bool,System.Collections.Generic.IEnumerable_string_,System.Collections.Generic.IEnumerable_string_,System.Nullable_System.DateTimeOffset_,System.Nullable_System.DateTimeOffset_).mAP50'></a>
+<a name='DiGi.GIS.YOLO.UI.Classes.YOLOTrainingRunResult.YOLOTrainingRunResult(string,string,string,string,string,System.Nullable_double_,System.Nullable_double_,System.Collections.Generic.IEnumerable_DiGi.GIS.YOLO.UI.Classes.YOLODetectorEvaluation_,bool,System.Collections.Generic.IEnumerable_string_,System.Collections.Generic.IEnumerable_string_,System.Nullable_System.DateTimeOffset_,System.Nullable_System.DateTimeOffset_,bool,System.Nullable_int_).mAP50'></a>
 
 `mAP50` [System\.Nullable&lt;](https://learn.microsoft.com/en-us/dotnet/api/system.nullable-1 'System\.Nullable\`1')[System\.Double](https://learn.microsoft.com/en-us/dotnet/api/system.double 'System\.Double')[&gt;](https://learn.microsoft.com/en-us/dotnet/api/system.nullable-1 'System\.Nullable\`1')
 
 The box mAP at IoU 0\.5 on the Test split, or null when it was not validated\.
 
-<a name='DiGi.GIS.YOLO.UI.Classes.YOLOTrainingRunResult.YOLOTrainingRunResult(string,string,string,string,string,System.Nullable_double_,System.Nullable_double_,System.Collections.Generic.IEnumerable_DiGi.GIS.YOLO.UI.Classes.YOLODetectorEvaluation_,bool,System.Collections.Generic.IEnumerable_string_,System.Collections.Generic.IEnumerable_string_,System.Nullable_System.DateTimeOffset_,System.Nullable_System.DateTimeOffset_).mAP50_95'></a>
+<a name='DiGi.GIS.YOLO.UI.Classes.YOLOTrainingRunResult.YOLOTrainingRunResult(string,string,string,string,string,System.Nullable_double_,System.Nullable_double_,System.Collections.Generic.IEnumerable_DiGi.GIS.YOLO.UI.Classes.YOLODetectorEvaluation_,bool,System.Collections.Generic.IEnumerable_string_,System.Collections.Generic.IEnumerable_string_,System.Nullable_System.DateTimeOffset_,System.Nullable_System.DateTimeOffset_,bool,System.Nullable_int_).mAP50_95'></a>
 
 `mAP50_95` [System\.Nullable&lt;](https://learn.microsoft.com/en-us/dotnet/api/system.nullable-1 'System\.Nullable\`1')[System\.Double](https://learn.microsoft.com/en-us/dotnet/api/system.double 'System\.Double')[&gt;](https://learn.microsoft.com/en-us/dotnet/api/system.nullable-1 'System\.Nullable\`1')
 
 The box mAP over IoU 0\.5 to 0\.95 on the Test split, or null when it was not validated\.
 
-<a name='DiGi.GIS.YOLO.UI.Classes.YOLOTrainingRunResult.YOLOTrainingRunResult(string,string,string,string,string,System.Nullable_double_,System.Nullable_double_,System.Collections.Generic.IEnumerable_DiGi.GIS.YOLO.UI.Classes.YOLODetectorEvaluation_,bool,System.Collections.Generic.IEnumerable_string_,System.Collections.Generic.IEnumerable_string_,System.Nullable_System.DateTimeOffset_,System.Nullable_System.DateTimeOffset_).yOLODetectorEvaluations'></a>
+<a name='DiGi.GIS.YOLO.UI.Classes.YOLOTrainingRunResult.YOLOTrainingRunResult(string,string,string,string,string,System.Nullable_double_,System.Nullable_double_,System.Collections.Generic.IEnumerable_DiGi.GIS.YOLO.UI.Classes.YOLODetectorEvaluation_,bool,System.Collections.Generic.IEnumerable_string_,System.Collections.Generic.IEnumerable_string_,System.Nullable_System.DateTimeOffset_,System.Nullable_System.DateTimeOffset_,bool,System.Nullable_int_).yOLODetectorEvaluations'></a>
 
 `yOLODetectorEvaluations` [System\.Collections\.Generic\.IEnumerable&lt;](https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.ienumerable-1 'System\.Collections\.Generic\.IEnumerable\`1')[YOLODetectorEvaluation](DiGi.GIS.YOLO.UI.Classes.md#DiGi.GIS.YOLO.UI.Classes.YOLODetectorEvaluation 'DiGi\.GIS\.YOLO\.UI\.Classes\.YOLODetectorEvaluation')[&gt;](https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.ienumerable-1 'System\.Collections\.Generic\.IEnumerable\`1')
 
 The rows of the detector evaluation step, or null when it did not run\.
 
-<a name='DiGi.GIS.YOLO.UI.Classes.YOLOTrainingRunResult.YOLOTrainingRunResult(string,string,string,string,string,System.Nullable_double_,System.Nullable_double_,System.Collections.Generic.IEnumerable_DiGi.GIS.YOLO.UI.Classes.YOLODetectorEvaluation_,bool,System.Collections.Generic.IEnumerable_string_,System.Collections.Generic.IEnumerable_string_,System.Nullable_System.DateTimeOffset_,System.Nullable_System.DateTimeOffset_).cancelled'></a>
+<a name='DiGi.GIS.YOLO.UI.Classes.YOLOTrainingRunResult.YOLOTrainingRunResult(string,string,string,string,string,System.Nullable_double_,System.Nullable_double_,System.Collections.Generic.IEnumerable_DiGi.GIS.YOLO.UI.Classes.YOLODetectorEvaluation_,bool,System.Collections.Generic.IEnumerable_string_,System.Collections.Generic.IEnumerable_string_,System.Nullable_System.DateTimeOffset_,System.Nullable_System.DateTimeOffset_,bool,System.Nullable_int_).cancelled'></a>
 
 `cancelled` [System\.Boolean](https://learn.microsoft.com/en-us/dotnet/api/system.boolean 'System\.Boolean')
 
 Whether the run was stopped before it finished\.
 
-<a name='DiGi.GIS.YOLO.UI.Classes.YOLOTrainingRunResult.YOLOTrainingRunResult(string,string,string,string,string,System.Nullable_double_,System.Nullable_double_,System.Collections.Generic.IEnumerable_DiGi.GIS.YOLO.UI.Classes.YOLODetectorEvaluation_,bool,System.Collections.Generic.IEnumerable_string_,System.Collections.Generic.IEnumerable_string_,System.Nullable_System.DateTimeOffset_,System.Nullable_System.DateTimeOffset_).failedStepNames'></a>
+<a name='DiGi.GIS.YOLO.UI.Classes.YOLOTrainingRunResult.YOLOTrainingRunResult(string,string,string,string,string,System.Nullable_double_,System.Nullable_double_,System.Collections.Generic.IEnumerable_DiGi.GIS.YOLO.UI.Classes.YOLODetectorEvaluation_,bool,System.Collections.Generic.IEnumerable_string_,System.Collections.Generic.IEnumerable_string_,System.Nullable_System.DateTimeOffset_,System.Nullable_System.DateTimeOffset_,bool,System.Nullable_int_).failedStepNames'></a>
 
 `failedStepNames` [System\.Collections\.Generic\.IEnumerable&lt;](https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.ienumerable-1 'System\.Collections\.Generic\.IEnumerable\`1')[System\.String](https://learn.microsoft.com/en-us/dotnet/api/system.string 'System\.String')[&gt;](https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.ienumerable-1 'System\.Collections\.Generic\.IEnumerable\`1')
 
 The steps that reported a failure, or null for none\.
 
-<a name='DiGi.GIS.YOLO.UI.Classes.YOLOTrainingRunResult.YOLOTrainingRunResult(string,string,string,string,string,System.Nullable_double_,System.Nullable_double_,System.Collections.Generic.IEnumerable_DiGi.GIS.YOLO.UI.Classes.YOLODetectorEvaluation_,bool,System.Collections.Generic.IEnumerable_string_,System.Collections.Generic.IEnumerable_string_,System.Nullable_System.DateTimeOffset_,System.Nullable_System.DateTimeOffset_).messages'></a>
+<a name='DiGi.GIS.YOLO.UI.Classes.YOLOTrainingRunResult.YOLOTrainingRunResult(string,string,string,string,string,System.Nullable_double_,System.Nullable_double_,System.Collections.Generic.IEnumerable_DiGi.GIS.YOLO.UI.Classes.YOLODetectorEvaluation_,bool,System.Collections.Generic.IEnumerable_string_,System.Collections.Generic.IEnumerable_string_,System.Nullable_System.DateTimeOffset_,System.Nullable_System.DateTimeOffset_,bool,System.Nullable_int_).messages'></a>
 
 `messages` [System\.Collections\.Generic\.IEnumerable&lt;](https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.ienumerable-1 'System\.Collections\.Generic\.IEnumerable\`1')[System\.String](https://learn.microsoft.com/en-us/dotnet/api/system.string 'System\.String')[&gt;](https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.ienumerable-1 'System\.Collections\.Generic\.IEnumerable\`1')
 
 What the run has to say beyond its identities, or null for nothing\.
 
-<a name='DiGi.GIS.YOLO.UI.Classes.YOLOTrainingRunResult.YOLOTrainingRunResult(string,string,string,string,string,System.Nullable_double_,System.Nullable_double_,System.Collections.Generic.IEnumerable_DiGi.GIS.YOLO.UI.Classes.YOLODetectorEvaluation_,bool,System.Collections.Generic.IEnumerable_string_,System.Collections.Generic.IEnumerable_string_,System.Nullable_System.DateTimeOffset_,System.Nullable_System.DateTimeOffset_).start'></a>
+<a name='DiGi.GIS.YOLO.UI.Classes.YOLOTrainingRunResult.YOLOTrainingRunResult(string,string,string,string,string,System.Nullable_double_,System.Nullable_double_,System.Collections.Generic.IEnumerable_DiGi.GIS.YOLO.UI.Classes.YOLODetectorEvaluation_,bool,System.Collections.Generic.IEnumerable_string_,System.Collections.Generic.IEnumerable_string_,System.Nullable_System.DateTimeOffset_,System.Nullable_System.DateTimeOffset_,bool,System.Nullable_int_).start'></a>
 
 `start` [System\.Nullable&lt;](https://learn.microsoft.com/en-us/dotnet/api/system.nullable-1 'System\.Nullable\`1')[System\.DateTimeOffset](https://learn.microsoft.com/en-us/dotnet/api/system.datetimeoffset 'System\.DateTimeOffset')[&gt;](https://learn.microsoft.com/en-us/dotnet/api/system.nullable-1 'System\.Nullable\`1')
 
 When the run started\.
 
-<a name='DiGi.GIS.YOLO.UI.Classes.YOLOTrainingRunResult.YOLOTrainingRunResult(string,string,string,string,string,System.Nullable_double_,System.Nullable_double_,System.Collections.Generic.IEnumerable_DiGi.GIS.YOLO.UI.Classes.YOLODetectorEvaluation_,bool,System.Collections.Generic.IEnumerable_string_,System.Collections.Generic.IEnumerable_string_,System.Nullable_System.DateTimeOffset_,System.Nullable_System.DateTimeOffset_).end'></a>
+<a name='DiGi.GIS.YOLO.UI.Classes.YOLOTrainingRunResult.YOLOTrainingRunResult(string,string,string,string,string,System.Nullable_double_,System.Nullable_double_,System.Collections.Generic.IEnumerable_DiGi.GIS.YOLO.UI.Classes.YOLODetectorEvaluation_,bool,System.Collections.Generic.IEnumerable_string_,System.Collections.Generic.IEnumerable_string_,System.Nullable_System.DateTimeOffset_,System.Nullable_System.DateTimeOffset_,bool,System.Nullable_int_).end'></a>
 
 `end` [System\.Nullable&lt;](https://learn.microsoft.com/en-us/dotnet/api/system.nullable-1 'System\.Nullable\`1')[System\.DateTimeOffset](https://learn.microsoft.com/en-us/dotnet/api/system.datetimeoffset 'System\.DateTimeOffset')[&gt;](https://learn.microsoft.com/en-us/dotnet/api/system.nullable-1 'System\.Nullable\`1')
 
 When the run ended\.
+
+<a name='DiGi.GIS.YOLO.UI.Classes.YOLOTrainingRunResult.YOLOTrainingRunResult(string,string,string,string,string,System.Nullable_double_,System.Nullable_double_,System.Collections.Generic.IEnumerable_DiGi.GIS.YOLO.UI.Classes.YOLODetectorEvaluation_,bool,System.Collections.Generic.IEnumerable_string_,System.Collections.Generic.IEnumerable_string_,System.Nullable_System.DateTimeOffset_,System.Nullable_System.DateTimeOffset_,bool,System.Nullable_int_).resumed'></a>
+
+`resumed` [System\.Boolean](https://learn.microsoft.com/en-us/dotnet/api/system.boolean 'System\.Boolean')
+
+Whether the run continued an interrupted training instead of starting from the beginning\.
+
+<a name='DiGi.GIS.YOLO.UI.Classes.YOLOTrainingRunResult.YOLOTrainingRunResult(string,string,string,string,string,System.Nullable_double_,System.Nullable_double_,System.Collections.Generic.IEnumerable_DiGi.GIS.YOLO.UI.Classes.YOLODetectorEvaluation_,bool,System.Collections.Generic.IEnumerable_string_,System.Collections.Generic.IEnumerable_string_,System.Nullable_System.DateTimeOffset_,System.Nullable_System.DateTimeOffset_,bool,System.Nullable_int_).resumedFromEpoch'></a>
+
+`resumedFromEpoch` [System\.Nullable&lt;](https://learn.microsoft.com/en-us/dotnet/api/system.nullable-1 'System\.Nullable\`1')[System\.Int32](https://learn.microsoft.com/en-us/dotnet/api/system.int32 'System\.Int32')[&gt;](https://learn.microsoft.com/en-us/dotnet/api/system.nullable-1 'System\.Nullable\`1')
+
+The 1\-based epoch the resumed run entered, or null for a fresh run, a run that was not resumed or one whose resume epoch was not read\.
 
 <a name='DiGi.GIS.YOLO.UI.Classes.YOLOTrainingRunResult.YOLOTrainingRunResult(System.Text.Json.Nodes.JsonObject)'></a>
 
@@ -3104,6 +3149,32 @@ public System.Collections.Generic.List<string> Messages { get; }
 
 #### Property Value
 [System\.Collections\.Generic\.List&lt;](https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.list-1 'System\.Collections\.Generic\.List\`1')[System\.String](https://learn.microsoft.com/en-us/dotnet/api/system.string 'System\.String')[&gt;](https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.list-1 'System\.Collections\.Generic\.List\`1')
+
+<a name='DiGi.GIS.YOLO.UI.Classes.YOLOTrainingRunResult.Resumed'></a>
+
+## YOLOTrainingRunResult\.Resumed Property
+
+Gets whether the run continued an interrupted training instead of starting from the beginning\.
+
+```csharp
+public bool Resumed { get; }
+```
+
+#### Property Value
+[System\.Boolean](https://learn.microsoft.com/en-us/dotnet/api/system.boolean 'System\.Boolean')
+
+<a name='DiGi.GIS.YOLO.UI.Classes.YOLOTrainingRunResult.ResumedFromEpoch'></a>
+
+## YOLOTrainingRunResult\.ResumedFromEpoch Property
+
+Gets the 1\-based epoch the resumed run entered, or null for a fresh run, a run that was not resumed or one whose resume epoch was not read\.
+
+```csharp
+public System.Nullable<int> ResumedFromEpoch { get; }
+```
+
+#### Property Value
+[System\.Nullable&lt;](https://learn.microsoft.com/en-us/dotnet/api/system.nullable-1 'System\.Nullable\`1')[System\.Int32](https://learn.microsoft.com/en-us/dotnet/api/system.int32 'System\.Int32')[&gt;](https://learn.microsoft.com/en-us/dotnet/api/system.nullable-1 'System\.Nullable\`1')
 
 <a name='DiGi.GIS.YOLO.UI.Classes.YOLOTrainingRunResult.RunName'></a>
 

@@ -479,6 +479,7 @@ namespace DiGi.GIS.YOLO.UI.ConsoleApp
 
         /// <summary>
         /// Runs the <c>--train</c> mode: the dataset build, the label check, the training, the validation on the Test split and the detector evaluation as one run that stops at the first failed step.
+        /// <para>A run whose <see cref="Classes.YOLOTrainingRunOptions.ResumeTraining"/> is set continues the interrupted run of the same name instead of starting a new one; its start row says which epoch it resumed from.</para>
         /// <para>The start weights and the output weights are reported with their SHA-256 as soon as each is known, and the identities and the evaluation rows are printed again at the end, so the table that gates a candidate names exactly which file each row is. The exit codes are <see cref="YearBuiltPredictionExitCode"/>, mapped by <see cref="Query.YOLOTrainingRunExitCode(YOLOTrainingRunResult?)"/>.</para>
         /// </summary>
         /// <param name="path_Options">The path of the options file, or null for <see cref="Constants.FileName.YOLOTrainingRunOptions"/> beside the executable.</param>
@@ -560,8 +561,9 @@ namespace DiGi.GIS.YOLO.UI.ConsoleApp
 
                 if (!string.IsNullOrWhiteSpace(result.StartWeightsSHA256) || !string.IsNullOrWhiteSpace(result.WeightsSHA256))
                 {
+                    string role_Start = result.Resumed && result.ResumedFromEpoch is not null ? string.Format(System.Globalization.CultureInfo.InvariantCulture, "Start (resume of epoch {0})", result.ResumedFromEpoch) : "Start";
                     Console.WriteLine("Role\tWeights\tSHA256");
-                    Console.WriteLine($"Start\t{result.StartWeightsPath}\t{result.StartWeightsSHA256}");
+                    Console.WriteLine($"{role_Start}\t{result.StartWeightsPath}\t{result.StartWeightsSHA256}");
                     Console.WriteLine($"Output\t{result.WeightsPath}\t{result.WeightsSHA256}");
                 }
 

@@ -36,6 +36,8 @@ namespace DiGi.GIS.YOLO.UI
                 nameof(Classes.YOLOTrainingRunOptions.StartWeightsPath),
                 nameof(Classes.YOLOTrainingRunOptions.RunName),
                 nameof(Classes.YOLOTrainingRunOptions.ProjectDirectory),
+                nameof(Classes.YOLOTrainingRunOptions.ResumeTraining),
+                nameof(DiGi.YOLO.Query.YOLOCheckpointInformation),
                 nameof(UnknownCountyIds),
                 nameof(LegacyReferences),
                 nameof(Classes.YOLOTrainingDatasetOptions.OutputDirectory),

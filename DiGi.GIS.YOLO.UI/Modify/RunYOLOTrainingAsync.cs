@@ -17,6 +17,7 @@ namespace DiGi.GIS.YOLO.UI
         /// <summary>
         /// Runs the detector retraining as one run: builds or appends to the training dataset, checks its labels, trains from the start weights, validates the result on the Test split and scores it against the other detectors.
         /// <para>The steps run in the order of <see cref="YOLOTrainingStep"/> and the run stops at the first one that fails; <see cref="YOLOTrainingRunOptions.Steps"/> narrows them. Every path is made absolute and every refusal that can be known up front - a missing start file, an unusable interpreter, a run name that is taken, a project folder inside a <c>YOLO\models</c> folder - is reported before the first step starts, with the option it concerns as the step name.</para>
+        /// <para>With <see cref="YOLOTrainingRunOptions.ResumeTraining"/> the run continues the interrupted checkpoint in <c>&lt;ProjectDirectory&gt;\&lt;RunName&gt;\weights\last.pt</c> instead of starting a new one. The preflight then refuses a run without the <see cref="YOLOTrainingStep.Train"/> step, a selected <see cref="YOLOTrainingStep.Dataset"/> step, a completed run, a missing checkpoint, a finished checkpoint, a checkpoint whose dataset is gone and one whose recorded run folder was moved or renamed - each named by the option it concerns, before the training starts. The tail is identical to a fresh run, and the result reports the resume and the epoch it entered.</para>
         /// <para>The trained weights are copied to <c>&lt;ProjectDirectory&gt;\&lt;RunName&gt;\&lt;RunName&gt;.pt</c>, a new file that is never overwritten and never named <c>model</c>; the validation and the evaluation measure that copy, and its SHA-256 is compared with the one the training reported. The identity of the start weights and of the copy is written to the log and to <paramref name="information"/> as soon as it is known. Without the training step the validation measures the start weights, which gives the baseline a candidate is compared with.</para>
         /// <para>A cancellation is a result with <see cref="YOLOTrainingRunResult.Cancelled"/> set rather than an exception, and what earlier steps wrote is left as it is; the dataset manifest lets a re-run continue.</para>
         /// </summary>
@@ -44,8 +45,11 @@ namespace DiGi.GIS.YOLO.UI
             double? mAP50 = null;
             double? mAP50_95 = null;
             bool cancelled = false;
+            bool resumed = false;
+            int? resumedFromEpoch = null;
 
             string? runName = yOLOTrainingRunOptions.RunName;
+            bool resumeTraining = yOLOTrainingRunOptions.ResumeTraining;
             string? startWeightsPath = string.IsNullOrWhiteSpace(yOLOTrainingRunOptions.StartWeightsPath) ? null : Path.GetFullPath(yOLOTrainingRunOptions.StartWeightsPath);
 
             void Report(string message)
@@ -68,7 +72,43 @@ namespace DiGi.GIS.YOLO.UI
 
             YOLOTrainingRunResult Result()
             {
-                return new YOLOTrainingRunResult(runName, startWeightsPath, startWeightsSHA256, weightsPath, weightsSHA256, mAP50, mAP50_95, yOLODetectorEvaluations, cancelled, failedStepNames, messages, start, DateTimeOffset.Now);
+                return new YOLOTrainingRunResult(runName, startWeightsPath, startWeightsSHA256, weightsPath, weightsSHA256, mAP50, mAP50_95, yOLODetectorEvaluations, cancelled, failedStepNames, messages, start, DateTimeOffset.Now, resumed, resumedFromEpoch);
+            }
+
+            // A checkpoint records its dataset path as ultralytics saw it, which may be relative to the working
+            // directory the run executed in; the same directory resolves it here.
+            static string? ResolveCheckpointDataPath(string? dataPath, string? baseDirectory)
+            {
+                if (string.IsNullOrWhiteSpace(dataPath))
+                {
+                    return null;
+                }
+
+                if (Path.IsPathRooted(dataPath) || string.IsNullOrWhiteSpace(baseDirectory))
+                {
+                    return dataPath;
+                }
+
+                return Path.Combine(baseDirectory, dataPath);
+            }
+
+            // The project and the name a checkpoint records are compared as full paths, case-insensitively, because a
+            // run folder is the same one whether or not a trailing separator or a different case was recorded.
+            static bool PathsEqual(string? left, string? right)
+            {
+                if (string.IsNullOrWhiteSpace(left) || string.IsNullOrWhiteSpace(right))
+                {
+                    return false;
+                }
+
+                try
+                {
+                    return string.Equals(Path.GetFullPath(left), Path.GetFullPath(right), StringComparison.OrdinalIgnoreCase);
+                }
+                catch
+                {
+                    return false;
+                }
             }
 
             List<YOLOTrainingStep> yOLOTrainingSteps = yOLOTrainingRunOptions.Steps is null || yOLOTrainingRunOptions.Steps.Count == 0 ? [.. Enum.GetValues<YOLOTrainingStep>()] : [.. yOLOTrainingRunOptions.Steps.Distinct().OrderBy(x => x)];
@@ -104,18 +144,36 @@ namespace DiGi.GIS.YOLO.UI
 
             string? runDirectory = null;
             string? path_Weights = null;
+            string? path_Resume = null;
             string? projectDirectory = null;
+
+            if (resumeTraining)
+            {
+                // A resume is a continuation, not a rebuild: the dataset is the one the checkpoint was trained on.
+                if (!train)
+                {
+                    Fail(nameof(YOLOTrainingRunOptions.ResumeTraining), "ResumeTraining needs the Train step - the training is the step it continues.");
+                }
+
+                if (yOLOTrainingSteps.Contains(YOLOTrainingStep.Dataset))
+                {
+                    Fail(nameof(YOLOTrainingRunOptions.ResumeTraining), "A resume never rebuilds the dataset it was trained on; remove the Dataset step from Steps.");
+                }
+            }
 
             if (train || validate)
             {
-                if (startWeightsPath is null || !string.Equals(Path.GetExtension(startWeightsPath), ".pt", StringComparison.OrdinalIgnoreCase) || !File.Exists(startWeightsPath))
+                if (!(resumeTraining && train))
                 {
-                    Fail(nameof(YOLOTrainingRunOptions.StartWeightsPath), string.Format(CultureInfo.InvariantCulture, "The start weights must be an existing .pt file: {0}", yOLOTrainingRunOptions.StartWeightsPath ?? "(none)"));
-                }
-                else
-                {
-                    startWeightsSHA256 = DiGi.YOLO.Query.FileSHA256(startWeightsPath);
-                    Report(string.Format(CultureInfo.InvariantCulture, "Start weights {0} SHA256 {1}", startWeightsPath, startWeightsSHA256 ?? "(unreadable)"));
+                    if (startWeightsPath is null || !string.Equals(Path.GetExtension(startWeightsPath), ".pt", StringComparison.OrdinalIgnoreCase) || !File.Exists(startWeightsPath))
+                    {
+                        Fail(nameof(YOLOTrainingRunOptions.StartWeightsPath), string.Format(CultureInfo.InvariantCulture, "The start weights must be an existing .pt file: {0}", yOLOTrainingRunOptions.StartWeightsPath ?? "(none)"));
+                    }
+                    else
+                    {
+                        startWeightsSHA256 = DiGi.YOLO.Query.FileSHA256(startWeightsPath);
+                        Report(string.Format(CultureInfo.InvariantCulture, "Start weights {0} SHA256 {1}", startWeightsPath, startWeightsSHA256 ?? "(unreadable)"));
+                    }
                 }
 
                 if (string.IsNullOrWhiteSpace(pythonPath) || (Path.IsPathRooted(pythonPath) && !File.Exists(pythonPath)))
@@ -147,7 +205,30 @@ namespace DiGi.GIS.YOLO.UI
                     {
                         runDirectory = Path.Combine(projectDirectory, runName);
                         path_Weights = Path.Combine(runDirectory, string.Concat(runName, ".pt"));
-                        if (Directory.Exists(runDirectory) || File.Exists(path_Weights))
+
+                        if (resumeTraining)
+                        {
+                            // The folder is expected to exist on a resume; only the run's own weights file, written after a
+                            // completed training, is a refusal, because it marks the run as finished rather than interrupted.
+                            if (File.Exists(path_Weights))
+                            {
+                                Fail(nameof(YOLOTrainingRunOptions.RunName), string.Format(CultureInfo.InvariantCulture, "The run '{0}' completed; choose a new RunName. A completed run is not resumed.", runName));
+                            }
+                            else
+                            {
+                                path_Resume = Path.Combine(runDirectory, Constants.DirectoryName.Weights, Constants.FileName.LastWeights);
+                                if (!Directory.Exists(runDirectory) || !File.Exists(path_Resume))
+                                {
+                                    Fail(nameof(YOLOTrainingRunOptions.ResumeTraining), string.Format(CultureInfo.InvariantCulture, "Nothing to resume: {0} has no {1}\\{2}.", runDirectory, Constants.DirectoryName.Weights, Constants.FileName.LastWeights));
+                                }
+                                else
+                                {
+                                    // The checkpoint is the start identity of a resume; StartWeightsPath is ignored.
+                                    startWeightsPath = path_Resume;
+                                }
+                            }
+                        }
+                        else if (Directory.Exists(runDirectory) || File.Exists(path_Weights))
                         {
                             Fail(nameof(YOLOTrainingRunOptions.RunName), string.Format(CultureInfo.InvariantCulture, "The run '{0}' already exists under {1}; choose a new RunName.", runName, projectDirectory));
                         }
@@ -176,6 +257,44 @@ namespace DiGi.GIS.YOLO.UI
                 }
 
                 pythonPath = yOLOEnvironmentResult.PythonPath ?? pythonPath;
+
+                if (resumeTraining && path_Resume is not null && startWeightsPath is not null)
+                {
+                    // The interpreter is proven runnable before the checkpoint is read, so a broken interpreter stays an
+                    // environment failure instead of being answered as an unreadable checkpoint.
+                    DiGi.YOLO.Classes.YOLOCheckpointInformation? yOLOCheckpointInformation = DiGi.YOLO.Query.YOLOCheckpointInformation(startWeightsPath, pythonPath, workingDirectory ?? outputDirectory, cancellationToken);
+
+                    if (yOLOCheckpointInformation is null)
+                    {
+                        Fail(nameof(DiGi.YOLO.Query.YOLOCheckpointInformation), string.Format(CultureInfo.InvariantCulture, "The checkpoint {0} could not be read; nothing to resume.", startWeightsPath));
+                        return Result();
+                    }
+
+                    if (yOLOCheckpointInformation.Finished)
+                    {
+                        Fail(nameof(DiGi.YOLO.Query.YOLOCheckpointInformation), string.Format(CultureInfo.InvariantCulture, "The checkpoint {0} is finished; nothing to resume.", startWeightsPath));
+                        return Result();
+                    }
+
+                    string? path_Data = ResolveCheckpointDataPath(yOLOCheckpointInformation.DataPath, workingDirectory ?? outputDirectory);
+                    if (string.IsNullOrWhiteSpace(path_Data) || !File.Exists(path_Data))
+                    {
+                        Fail(nameof(DiGi.YOLO.Query.YOLOCheckpointInformation), string.Format(CultureInfo.InvariantCulture, "The dataset the checkpoint {0} records is missing or was not named: {1}", startWeightsPath, yOLOCheckpointInformation.DataPath ?? "(none)"));
+                        return Result();
+                    }
+
+                    if (!string.Equals(yOLOCheckpointInformation.Name, runName, StringComparison.OrdinalIgnoreCase) || !PathsEqual(yOLOCheckpointInformation.Project, projectDirectory))
+                    {
+                        Fail(nameof(DiGi.YOLO.Query.YOLOCheckpointInformation), string.Format(CultureInfo.InvariantCulture, "The checkpoint {0} records the run folder '{1}\\{2}', which is not '{3}\\{4}'; it was moved or renamed, and ultralytics would write elsewhere.", startWeightsPath, yOLOCheckpointInformation.Project ?? "(none)", yOLOCheckpointInformation.Name ?? "(none)", projectDirectory, runName));
+                        return Result();
+                    }
+
+                    // The resume is certain from here on: it is recorded even if the training then fails.
+                    resumed = true;
+                    resumedFromEpoch = yOLOCheckpointInformation.Epoch + 1;
+                    startWeightsSHA256 = DiGi.YOLO.Query.FileSHA256(startWeightsPath);
+                    Report(string.Format(CultureInfo.InvariantCulture, "Resuming {0} from epoch {1} of {2}, {3} SHA256 {4}", runName, resumedFromEpoch?.ToString(CultureInfo.InvariantCulture) ?? "(unknown)", yOLOCheckpointInformation.Epochs?.ToString(CultureInfo.InvariantCulture) ?? "(unknown)", startWeightsPath, startWeightsSHA256 ?? "(unreadable)"));
+                }
             }
 
             bool Stopped()
@@ -244,23 +363,50 @@ namespace DiGi.GIS.YOLO.UI
 
                 if (train)
                 {
-                    YOLOTrainingOptions? yOLOTrainingOptions = DiGi.YOLO.Create.YOLOTrainingOptions(pythonPath, startWeightsPath, path_Configuration, workingDirectory);
+                    YOLOTrainingOptions? yOLOTrainingOptions;
+
+                    if (resumeTraining && path_Resume is not null)
+                    {
+                        // A resume sends only the checkpoint, the device and the interpreter context: the checkpoint
+                        // restores the dataset, the ceiling, the schedule and the run folder, and the rest of the
+                        // options are ignored. Building them directly rather than through Create keeps that honest -
+                        // Create would demand a start model and a conf.yaml the resume does not take from here.
+                        yOLOTrainingOptions = new DiGi.YOLO.Classes.YOLOTrainingOptions()
+                        {
+                            Device = yOLOTrainingRunOptions.Device,
+                            PythonPath = pythonPath,
+                            ResumePath = path_Resume,
+                            WorkingDirectory = workingDirectory ?? outputDirectory
+                        };
+
+                        Report("ResumeTraining is set: StartWeightsPath, Epochs, Patience, ImageSize, Batch and Seed are ignored - the checkpoint restores them.");
+                    }
+                    else
+                    {
+                        yOLOTrainingOptions = DiGi.YOLO.Create.YOLOTrainingOptions(pythonPath, startWeightsPath, path_Configuration, workingDirectory);
+                        if (yOLOTrainingOptions is not null)
+                        {
+                            yOLOTrainingOptions.Batch = yOLOTrainingRunOptions.Batch;
+                            yOLOTrainingOptions.Device = yOLOTrainingRunOptions.Device;
+                            yOLOTrainingOptions.Epochs = yOLOTrainingRunOptions.Epochs;
+                            yOLOTrainingOptions.ImageSize = yOLOTrainingRunOptions.ImageSize;
+                            yOLOTrainingOptions.Name = runName;
+                            yOLOTrainingOptions.Patience = yOLOTrainingRunOptions.Patience;
+                            yOLOTrainingOptions.Project = projectDirectory;
+                            yOLOTrainingOptions.Seed = yOLOTrainingRunOptions.Seed;
+                        }
+                    }
+
                     if (yOLOTrainingOptions is null)
                     {
                         Fail(Query.YOLOTrainingStepName(YOLOTrainingStep.Train), "The training could not be set up.");
                         return Result();
                     }
 
-                    yOLOTrainingOptions.Batch = yOLOTrainingRunOptions.Batch;
-                    yOLOTrainingOptions.Device = yOLOTrainingRunOptions.Device;
-                    yOLOTrainingOptions.Epochs = yOLOTrainingRunOptions.Epochs;
-                    yOLOTrainingOptions.ImageSize = yOLOTrainingRunOptions.ImageSize;
-                    yOLOTrainingOptions.Name = runName;
-                    yOLOTrainingOptions.Patience = yOLOTrainingRunOptions.Patience;
-                    yOLOTrainingOptions.Project = projectDirectory;
-                    yOLOTrainingOptions.Seed = yOLOTrainingRunOptions.Seed;
-
-                    Report(string.Format(CultureInfo.InvariantCulture, "Training run {0} from {1}", runName, startWeightsPath));
+                    if (!resumeTraining)
+                    {
+                        Report(string.Format(CultureInfo.InvariantCulture, "Training run {0} from {1}", runName, startWeightsPath));
+                    }
 
                     // Train is synchronous and can take hours; off the caller's thread, so a Ctrl+C handler is never starved.
                     YOLOTrainingResult? yOLOTrainingResult = await Task.Run(() => DiGi.YOLO.Modify.Train(yOLOTrainingOptions, cancellationToken), CancellationToken.None);
@@ -278,6 +424,12 @@ namespace DiGi.GIS.YOLO.UI
                     }
 
                     startWeightsSHA256 = yOLOTrainingResult.StartModelSHA256 ?? startWeightsSHA256;
+
+                    if (resumeTraining)
+                    {
+                        // The success block names the epoch the run actually entered; fall back to the checkpoint's next epoch.
+                        resumedFromEpoch = yOLOTrainingResult.ResumedFromEpoch ?? resumedFromEpoch;
+                    }
 
                     try
                     {

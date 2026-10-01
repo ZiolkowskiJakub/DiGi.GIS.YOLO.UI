@@ -36,5 +36,11 @@ namespace DiGi.GIS.YOLO.UI.Constants
         /// <para>It is also the resume journal - a building is appended once all of its images and label files are written, so a building it names is complete.</para>
         /// </summary>
         public const string DatasetReferences = "dataset_references.tsv";
+
+        /// <summary>
+        /// Gets the name of the checkpoint ultralytics writes into a run&apos;s <c>weights</c> folder and keeps up to date after every epoch.
+        /// <para>A resume continues this file, so a run whose folder holds it and no completed <c>&lt;RunName&gt;.pt</c> is an interrupted run.</para>
+        /// </summary>
+        public const string LastWeights = "last.pt";
     }
 }

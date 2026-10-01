@@ -88,6 +88,8 @@ One of [DiGi\.GIS\.YOLO\.UI\.Enums\.YearBuiltPredictionExitCode](https://learn.m
 
 Runs the `--train` mode: the dataset build, the label check, the training, the validation on the Test split and the detector evaluation as one run that stops at the first failed step\.
 
+A run whose [DiGi\.GIS\.YOLO\.UI\.Classes\.YOLOTrainingRunOptions\.ResumeTraining](https://learn.microsoft.com/en-us/dotnet/api/digi.gis.yolo.ui.classes.yolotrainingrunoptions.resumetraining 'DiGi\.GIS\.YOLO\.UI\.Classes\.YOLOTrainingRunOptions\.ResumeTraining') is set continues the interrupted run of the same name instead of starting a new one; its start row says which epoch it resumed from.
+
 The start weights and the output weights are reported with their SHA-256 as soon as each is known, and the identities and the evaluation rows are printed again at the end, so the table that gates a candidate names exactly which file each row is. The exit codes are [DiGi\.GIS\.YOLO\.UI\.Enums\.YearBuiltPredictionExitCode](https://learn.microsoft.com/en-us/dotnet/api/digi.gis.yolo.ui.enums.yearbuiltpredictionexitcode 'DiGi\.GIS\.YOLO\.UI\.Enums\.YearBuiltPredictionExitCode'), mapped by [DiGi\.GIS\.YOLO\.UI\.Query\.YOLOTrainingRunExitCode\(DiGi\.GIS\.YOLO\.UI\.Classes\.YOLOTrainingRunResult\)](https://learn.microsoft.com/en-us/dotnet/api/digi.gis.yolo.ui.query.yolotrainingrunexitcode#digi-gis-yolo-ui-query-yolotrainingrunexitcode(digi-gis-yolo-ui-classes-yolotrainingrunresult) 'DiGi\.GIS\.YOLO\.UI\.Query\.YOLOTrainingRunExitCode\(DiGi\.GIS\.YOLO\.UI\.Classes\.YOLOTrainingRunResult\)').
 
 ```csharp

@@ -10,6 +10,7 @@ namespace DiGi.GIS.YOLO.UI.Classes
     /// <summary>
     /// Provides the settings of the <c>--train</c> console mode: the training dataset it builds and checks, the weights it starts from, the hyper-parameters of the run, and which steps run.
     /// <para>The dataset half is a nested <see cref="YOLOTrainingDatasetOptions"/> rather than a copy of its members, so one dataset file keeps meaning the same thing to <c>--dataset</c> and <c>--train</c>. The interpreter and working directory named here take precedence over the nested ones.</para>
+    /// <para><see cref="ResumeTraining"/> turns the run into a continuation of an interrupted one, whose hyper-parameters are restored from the checkpoint instead of being read here.</para>
     /// <para>The defaults of the hyper-parameters are the ones in the README of <c>DiGi.YOLO</c>. <see cref="StartWeightsPath"/>, <see cref="RunName"/> and <see cref="ProjectDirectory"/> have none, so a run never starts from weights nobody named or writes into a folder nobody chose.</para>
     /// </summary>
     public class YOLOTrainingRunOptions : SerializableOptions, IGISYOLOUISerializableObject
@@ -39,6 +40,7 @@ namespace DiGi.GIS.YOLO.UI.Classes
                 Patience = yOLOTrainingRunOptions.Patience;
                 ProjectDirectory = yOLOTrainingRunOptions.ProjectDirectory;
                 PythonPath = yOLOTrainingRunOptions.PythonPath;
+                ResumeTraining = yOLOTrainingRunOptions.ResumeTraining;
                 RunName = yOLOTrainingRunOptions.RunName;
                 Seed = yOLOTrainingRunOptions.Seed;
                 StartWeightsPath = yOLOTrainingRunOptions.StartWeightsPath;
@@ -58,6 +60,7 @@ namespace DiGi.GIS.YOLO.UI.Classes
 
         /// <summary>
         /// Gets or sets the training batch size.
+        /// <para>Ignored when <see cref="ResumeTraining"/> is set: the checkpoint restores it.</para>
         /// </summary>
         [JsonInclude, JsonPropertyName(nameof(Batch))]
         public int Batch { get; set; } = 16;
@@ -76,18 +79,21 @@ namespace DiGi.GIS.YOLO.UI.Classes
 
         /// <summary>
         /// Gets or sets the upper bound of training epochs.
+        /// <para>Ignored when <see cref="ResumeTraining"/> is set: the ceiling is restored from the checkpoint, and a different one is a new run.</para>
         /// </summary>
         [JsonInclude, JsonPropertyName(nameof(Epochs))]
         public int Epochs { get; set; } = 150;
 
         /// <summary>
         /// Gets or sets the image size, in pixels, of the training and validation.
+        /// <para>Ignored when <see cref="ResumeTraining"/> is set: the checkpoint restores it.</para>
         /// </summary>
         [JsonInclude, JsonPropertyName(nameof(ImageSize))]
         public int ImageSize { get; set; } = 640;
 
         /// <summary>
         /// Gets or sets the number of epochs without improvement after which the training stops early.
+        /// <para>Ignored when <see cref="ResumeTraining"/> is set: the patience counter is restored from the checkpoint.</para>
         /// </summary>
         [JsonInclude, JsonPropertyName(nameof(Patience))]
         public int Patience { get; set; } = 50;
@@ -105,20 +111,30 @@ namespace DiGi.GIS.YOLO.UI.Classes
         public string? PythonPath { get; set; } = null;
 
         /// <summary>
+        /// Gets or sets whether the run continues the interrupted training in <see cref="ProjectDirectory"/>\<see cref="RunName"/> instead of starting a new one.
+        /// <para>Requires the <see cref="YOLOTrainingStep.Train"/> step and refuses a selected <see cref="YOLOTrainingStep.Dataset"/> step, which would rebuild the dataset the checkpoint was trained on. When set, the run is identified by <see cref="ProjectDirectory"/> and <see cref="RunName"/>, and <see cref="StartWeightsPath"/>, <see cref="Epochs"/>, <see cref="Patience"/>, <see cref="ImageSize"/>, <see cref="Batch"/> and <see cref="Seed"/> are ignored and logged as ignored - the checkpoint restores them. <see cref="Device"/>, <see cref="PythonPath"/>, <see cref="WorkingDirectory"/>, <see cref="Steps"/> and <see cref="DatasetOptions"/> still apply, and the epoch ceiling is fixed by the checkpoint.</para>
+        /// <para>This is not <see cref="YOLOTrainingDatasetOptions.Resume"/>, which resumes the dataset build - a different thing.</para>
+        /// </summary>
+        [JsonInclude, JsonPropertyName(nameof(ResumeTraining))]
+        public bool ResumeTraining { get; set; } = false;
+
+        /// <summary>
         /// Gets or sets the name of the run: the name of its folder under <see cref="ProjectDirectory"/> and of the weights file copied out of it, <c>&lt;RunName&gt;.pt</c>.
-        /// <para>A name that already has a folder or a weights file is refused before anything starts, so a run never overwrites an earlier one, and <c>model</c> is refused so the production weights are never a target.</para>
+        /// <para>A name that already has a weights file is refused before anything starts, so a run never overwrites an earlier one, and <c>model</c> is refused so the production weights are never a target. On a <see cref="ResumeTraining"/> run the folder is expected to exist - only the weights file is still refused, because it marks the run as completed.</para>
         /// </summary>
         [JsonInclude, JsonPropertyName(nameof(RunName))]
         public string? RunName { get; set; } = null;
 
         /// <summary>
         /// Gets or sets the seed of the training.
+        /// <para>Ignored when <see cref="ResumeTraining"/> is set: the checkpoint restores it.</para>
         /// </summary>
         [JsonInclude, JsonPropertyName(nameof(Seed))]
         public int Seed { get; set; } = 0;
 
         /// <summary>
         /// Gets or sets the weights the training starts from: a <c>.pt</c> checkpoint, either an earlier detector or the base <c>yolo26x.pt</c>.
+        /// <para>Ignored when <see cref="ResumeTraining"/> is set: the run continues the interrupted checkpoint in its own folder instead.</para>
         /// </summary>
         [JsonInclude, JsonPropertyName(nameof(StartWeightsPath))]
         public string? StartWeightsPath { get; set; } = null;
