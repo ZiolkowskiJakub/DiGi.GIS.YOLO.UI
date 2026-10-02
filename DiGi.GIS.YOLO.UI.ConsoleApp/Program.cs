@@ -559,6 +559,13 @@ namespace DiGi.GIS.YOLO.UI.ConsoleApp
 
                 Console.ResetColor();
 
+                if (result.AutoResumes.Count != 0)
+                {
+                    Console.ForegroundColor = ConsoleColor.Yellow;
+                    Console.WriteLine($"[NOTE] Resumed automatically {result.AutoResumes.Count} time(s): {string.Join(", ", result.AutoResumes.Select(x => string.Format(System.Globalization.CultureInfo.InvariantCulture, "epoch {0}, {1} at {2:HH:mm:ss}", x.Epoch ?? 0, x.Reason, x.Time)))}");
+                    Console.ResetColor();
+                }
+
                 if (!string.IsNullOrWhiteSpace(result.StartWeightsSHA256) || !string.IsNullOrWhiteSpace(result.WeightsSHA256))
                 {
                     string role_Start = result.Resumed && result.ResumedFromEpoch is not null ? string.Format(System.Globalization.CultureInfo.InvariantCulture, "Start (resume of epoch {0})", result.ResumedFromEpoch) : "Start";

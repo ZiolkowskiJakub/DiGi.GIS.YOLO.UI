@@ -1,6 +1,7 @@
 using DiGi.Core.Classes;
 using DiGi.GIS.YOLO.UI.Enums;
 using DiGi.GIS.YOLO.UI.Interfaces;
+using System;
 using System.Collections.Generic;
 using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
@@ -11,6 +12,7 @@ namespace DiGi.GIS.YOLO.UI.Classes
     /// Provides the settings of the <c>--train</c> console mode: the training dataset it builds and checks, the weights it starts from, the hyper-parameters of the run, and which steps run.
     /// <para>The dataset half is a nested <see cref="YOLOTrainingDatasetOptions"/> rather than a copy of its members, so one dataset file keeps meaning the same thing to <c>--dataset</c> and <c>--train</c>. The interpreter and working directory named here take precedence over the nested ones.</para>
     /// <para><see cref="ResumeTraining"/> turns the run into a continuation of an interrupted one, whose hyper-parameters are restored from the checkpoint instead of being read here.</para>
+    /// <para><see cref="AutoResumeCount"/> makes the runner continue its own training after it stalls or crashes, up to that many times, without an operator; <see cref="InactivityTimeout"/> is how long it may be silent before it counts as stalled.</para>
     /// <para>The defaults of the hyper-parameters are the ones in the README of <c>DiGi.YOLO</c>. <see cref="StartWeightsPath"/>, <see cref="RunName"/> and <see cref="ProjectDirectory"/> have none, so a run never starts from weights nobody named or writes into a folder nobody chose.</para>
     /// </summary>
     public class YOLOTrainingRunOptions : SerializableOptions, IGISYOLOUISerializableObject
@@ -32,11 +34,13 @@ namespace DiGi.GIS.YOLO.UI.Classes
         {
             if (yOLOTrainingRunOptions is not null)
             {
+                AutoResumeCount = yOLOTrainingRunOptions.AutoResumeCount;
                 Batch = yOLOTrainingRunOptions.Batch;
                 DatasetOptions = Core.Query.Clone(yOLOTrainingRunOptions.DatasetOptions);
                 Device = yOLOTrainingRunOptions.Device;
                 Epochs = yOLOTrainingRunOptions.Epochs;
                 ImageSize = yOLOTrainingRunOptions.ImageSize;
+                InactivityTimeout = yOLOTrainingRunOptions.InactivityTimeout;
                 Patience = yOLOTrainingRunOptions.Patience;
                 ProjectDirectory = yOLOTrainingRunOptions.ProjectDirectory;
                 PythonPath = yOLOTrainingRunOptions.PythonPath;
@@ -57,6 +61,13 @@ namespace DiGi.GIS.YOLO.UI.Classes
             : base(jsonObject)
         {
         }
+
+        /// <summary>
+        /// Gets or sets the number of times the run resumes its own training automatically after it stalls or crashes, without waiting for an operator.
+        /// <para>The default is 0, which keeps the behaviour of a surface that never asked for retrying; the tray sets 3 for an unattended run. A resumed attempt starts from the run&apos;s own <c>weights\last.pt</c>, which is copied aside before each resume, and each one is recorded in <see cref="YOLOTrainingRunResult.AutoResumes"/>. A refusal raised before a process started, a finished checkpoint, and a stop requested by the operator through the cancellation token are never resumed.</para>
+        /// </summary>
+        [JsonInclude, JsonPropertyName(nameof(AutoResumeCount))]
+        public int AutoResumeCount { get; set; } = 0;
 
         /// <summary>
         /// Gets or sets the training batch size.
@@ -90,6 +101,13 @@ namespace DiGi.GIS.YOLO.UI.Classes
         /// </summary>
         [JsonInclude, JsonPropertyName(nameof(ImageSize))]
         public int ImageSize { get; set; } = 640;
+
+        /// <summary>
+        /// Gets or sets how long the training may go without a line on either output stream before it is treated as stalled and ended, or null to use the default of <c>DiGi.YOLO</c> (15 minutes).
+        /// <para>A value that is not positive disables the limit, so null is not the same as zero; the tray leaves this empty to keep the runner&apos;s default. It applies to the first attempt and to every automatic resume (<see cref="AutoResumeCount"/>).</para>
+        /// </summary>
+        [JsonInclude, JsonPropertyName(nameof(InactivityTimeout))]
+        public TimeSpan? InactivityTimeout { get; set; } = null;
 
         /// <summary>
         /// Gets or sets the number of epochs without improvement after which the training stops early.

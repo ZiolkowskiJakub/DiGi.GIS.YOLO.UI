@@ -42,5 +42,11 @@ namespace DiGi.GIS.YOLO.UI.Constants
         /// <para>A resume continues this file, so a run whose folder holds it and no completed <c>&lt;RunName&gt;.pt</c> is an interrupted run.</para>
         /// </summary>
         public const string LastWeights = "last.pt";
+
+        /// <summary>
+        /// Gets the prefix of the copy a run takes of its <c>weights\last.pt</c> before each automatic resume.
+        /// <para>The full name is <c>last_autoresume&lt;N&gt;_&lt;yyyyMMdd_HHmmss&gt;.pt</c>. A process killed while saving can leave a truncated <c>last.pt</c>, so the copy keeps the previous good checkpoint recoverable by hand.</para>
+        /// </summary>
+        public const string AutoResumeWeightsPrefix = "last_autoresume";
     }
 }

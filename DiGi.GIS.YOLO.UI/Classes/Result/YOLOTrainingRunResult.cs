@@ -10,10 +10,13 @@ namespace DiGi.GIS.YOLO.UI.Classes
     /// <summary>
     /// What one <c>--train</c> run did: the identity of the weights it started from and of the weights it produced, and how they scored on the Test split.
     /// <para>Both identities are the SHA-256 of the file on disk, so a row of a comparison table names exactly which file it measures. <see cref="FailedStepNames"/> says whether every step that was asked for completed; the first failure stops the run.</para>
-    /// <para>A resumed run says so through <see cref="Resumed"/> and <see cref="ResumedFromEpoch"/> - an interrupted run is continued rather than restarted, and a resumed run is not bit-identical to an uninterrupted one.</para>
+    /// <para>A resumed run says so through <see cref="Resumed"/> and <see cref="ResumedFromEpoch"/> - an interrupted run is continued rather than restarted, and a resumed run is not bit-identical to an uninterrupted one. <see cref="AutoResumes"/> names each resume the runner made on its own after the training stalled or crashed.</para>
     /// </summary>
     public class YOLOTrainingRunResult : SerializableResult, IGISYOLOUISerializableObject
     {
+        [JsonInclude, JsonPropertyName(nameof(AutoResumes))]
+        private readonly List<YOLOTrainingAutoResume> autoResumes = [];
+
         [JsonInclude, JsonPropertyName(nameof(Cancelled))]
         private readonly bool cancelled;
 
@@ -77,6 +80,7 @@ namespace DiGi.GIS.YOLO.UI.Classes
         /// <param name="end">When the run ended.</param>
         /// <param name="resumed">Whether the run continued an interrupted training instead of starting from the beginning.</param>
         /// <param name="resumedFromEpoch">The 1-based epoch the resumed run entered, or null for a fresh run, a run that was not resumed or one whose resume epoch was not read.</param>
+        /// <param name="autoResumes">The automatic resumes the run made after its training stalled or crashed, or null for none.</param>
         public YOLOTrainingRunResult(
             string? runName,
             string? startWeightsPath,
@@ -92,7 +96,8 @@ namespace DiGi.GIS.YOLO.UI.Classes
             DateTimeOffset? start,
             DateTimeOffset? end,
             bool resumed = false,
-            int? resumedFromEpoch = null)
+            int? resumedFromEpoch = null,
+            IEnumerable<YOLOTrainingAutoResume>? autoResumes = null)
         {
             this.runName = runName;
             this.startWeightsPath = startWeightsPath;
@@ -102,6 +107,17 @@ namespace DiGi.GIS.YOLO.UI.Classes
             this.mAP50 = mAP50;
             this.mAP50_95 = mAP50_95;
             this.cancelled = cancelled;
+
+            if (autoResumes is not null)
+            {
+                foreach (YOLOTrainingAutoResume yOLOTrainingAutoResume in autoResumes)
+                {
+                    if (Core.Query.Clone(yOLOTrainingAutoResume) is YOLOTrainingAutoResume yOLOTrainingAutoResume_Clone)
+                    {
+                        this.autoResumes.Add(yOLOTrainingAutoResume_Clone);
+                    }
+                }
+            }
 
             if (yOLODetectorEvaluations is not null)
             {
@@ -139,6 +155,7 @@ namespace DiGi.GIS.YOLO.UI.Classes
         {
             if (yOLOTrainingRunResult is not null)
             {
+                autoResumes = yOLOTrainingRunResult.AutoResumes;
                 cancelled = yOLOTrainingRunResult.cancelled;
                 end = yOLOTrainingRunResult.end;
                 failedStepNames = [.. yOLOTrainingRunResult.failedStepNames];
@@ -164,6 +181,28 @@ namespace DiGi.GIS.YOLO.UI.Classes
         public YOLOTrainingRunResult(JsonObject? jsonObject)
             : base(jsonObject)
         {
+        }
+
+        /// <summary>
+        /// Gets the automatic resumes the run made after its training stalled or crashed, one entry per resume, in the order they happened. Empty when none was made.
+        /// <para>This is distinct from <see cref="Resumed"/>: that one describes a resume an operator asked for, this one the retries the runner made by itself.</para>
+        /// </summary>
+        [JsonIgnore]
+        public List<YOLOTrainingAutoResume> AutoResumes
+        {
+            get
+            {
+                List<YOLOTrainingAutoResume> result = [];
+                foreach (YOLOTrainingAutoResume yOLOTrainingAutoResume in autoResumes)
+                {
+                    if (Core.Query.Clone(yOLOTrainingAutoResume) is YOLOTrainingAutoResume yOLOTrainingAutoResume_Clone)
+                    {
+                        result.Add(yOLOTrainingAutoResume_Clone);
+                    }
+                }
+
+                return result;
+            }
         }
 
         /// <summary>

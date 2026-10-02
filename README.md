@@ -193,6 +193,8 @@ Progress lines are the same `[PROGRESS]` / `[INFO]` lines as the other modes. Th
 | `ResumeTraining` | `false` — continue the interrupted run named by `ProjectDirectory` + `RunName` instead of starting a new one (see below) |
 | `RunName`, `ProjectDirectory` | none — required for `Train` (the folder is absolute) |
 | `Epochs` / `Patience` / `ImageSize` / `Batch` / `Seed` | `150` / `50` / `640` / `16` / `0` (the `DiGi.YOLO` README); ignored when `ResumeTraining` is set |
+| `AutoResumeCount` | `0` — the runner's own retries after a stall or a crash; the tray sets `3` (see below) |
+| `InactivityTimeout` | `null` — the `DiGi.YOLO` default, 15 minutes; a `TimeSpan` such as `00:15:00` overrides it, and `0` disables the limit |
 | `Device`, `PythonPath`, `WorkingDirectory` | `null` |
 | `Steps` | `null` — all; the committed template lists only `Dataset`, and counts |
 
@@ -214,6 +216,16 @@ The run is refused before the training starts, with the reason named by its opti
 | `<ProjectDirectory>\<RunName>\<RunName>.pt` exists | the run completed; choose a new run name |
 | the checkpoint cannot be read, is finished, or records a dataset that is gone | the checkpoint is not resumable |
 | the checkpoint records a different project or name | the folder was moved or renamed; ultralytics would write elsewhere |
+
+### Stalls and automatic resume — `AutoResumeCount`
+
+A training can stop producing output while staying alive — a data-loader deadlock holds the GPU with every process at 0 % CPU — or its process can die with a driver fault. `DiGi.YOLO` ends a run whose output stays silent for `InactivityTimeout` (15 minutes by default) and reports it as stalled rather than cancelled. `AutoResumeCount` makes the runner continue such a run by itself, up to that many times, without an operator.
+
+- Only a **stall** or a **crash** (a non-zero exit code from a process that started) is resumed. A refusal raised before a process started, a finished checkpoint and a stop requested with Ctrl+C are never resumed.
+- Each resume first copies `weights\last.pt` to `weights\last_autoresume<N>_<yyyyMMdd_HHmmss>.pt`, then continues from `last.pt` with the epoch ceiling the checkpoint holds. The copy keeps the previous checkpoint recoverable if the process is killed while saving.
+- The log says `Training stalled at epoch E (last output hh:mm:ss) - automatic resume N of M`, or `Training exited with code X - automatic resume N of M`; the final table names each resume, and the result records them in `AutoResumes`. The tray reads those lines for its live status.
+- The default is `0` — no retries — because a library must not retry unasked; the tray offers `3` for an unattended run. `InactivityTimeout` is a `TimeSpan` such as `00:15:00`; leave it unset for the `DiGi.YOLO` default, and note that `0` disables the limit rather than meaning "immediately".
+- A run still dies with the tray or a power cut: automatic resume shortens a stall or a crash, it does not make a run survive. That recovery is `ResumeTraining` above.
 
 ### Exit codes of `--train`
 

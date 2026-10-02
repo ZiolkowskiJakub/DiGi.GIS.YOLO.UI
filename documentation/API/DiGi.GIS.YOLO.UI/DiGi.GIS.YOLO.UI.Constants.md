@@ -130,6 +130,21 @@ public static class FileName
 Inheritance [System\.Object](https://learn.microsoft.com/en-us/dotnet/api/system.object 'System\.Object') → FileName
 ### Fields
 
+<a name='DiGi.GIS.YOLO.UI.Constants.FileName.AutoResumeWeightsPrefix'></a>
+
+## FileName\.AutoResumeWeightsPrefix Field
+
+Gets the prefix of the copy a run takes of its `weights\last.pt` before each automatic resume\.
+
+The full name is `last_autoresume<N>_<yyyyMMdd_HHmmss>.pt`. A process killed while saving can leave a truncated `last.pt`, so the copy keeps the previous good checkpoint recoverable by hand.
+
+```csharp
+public const string AutoResumeWeightsPrefix = "last_autoresume";
+```
+
+#### Field Value
+[System\.String](https://learn.microsoft.com/en-us/dotnet/api/system.string 'System\.String')
+
 <a name='DiGi.GIS.YOLO.UI.Constants.FileName.DatasetReferences'></a>
 
 ## FileName\.DatasetReferences Field
