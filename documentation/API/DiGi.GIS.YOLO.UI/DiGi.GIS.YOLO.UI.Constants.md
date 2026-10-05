@@ -31,6 +31,21 @@ public const int BuildingDataReference_Maximum = 10000;
 #### Field Value
 [System\.Int32](https://learn.microsoft.com/en-us/dotnet/api/system.int32 'System\.Int32')
 
+<a name='DiGi.GIS.YOLO.UI.Constants.Count.CrashErrorOutputLines'></a>
+
+## Count\.CrashErrorOutputLines Field
+
+Gets the number of trailing standard\-error lines of a crashed training attempt that are reported before it is resumed automatically\.
+
+The attempt's output is not kept anywhere else: the runner pipes it, and the automatic resume replaces the attempt's result, so these lines are the only record of why it exited. Thirty lines hold a whole Python traceback through torch's data loader (the one seen on train9_fresh was about thirty-five lines, its last ones naming the exception).
+
+```csharp
+public const int CrashErrorOutputLines = 30;
+```
+
+#### Field Value
+[System\.Int32](https://learn.microsoft.com/en-us/dotnet/api/system.int32 'System\.Int32')
+
 <a name='DiGi.GIS.YOLO.UI.Constants.Count.ImageByte_Estimate'></a>
 
 ## Count\.ImageByte\_Estimate Field

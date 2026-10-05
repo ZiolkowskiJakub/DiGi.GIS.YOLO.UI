@@ -18,7 +18,7 @@ namespace DiGi.GIS.YOLO.UI
         /// Runs the detector retraining as one run: builds or appends to the training dataset, checks its labels, trains from the start weights, validates the result on the Test split and scores it against the other detectors.
         /// <para>The steps run in the order of <see cref="YOLOTrainingStep"/> and the run stops at the first one that fails; <see cref="YOLOTrainingRunOptions.Steps"/> narrows them. Every path is made absolute and every refusal that can be known up front - a missing start file, an unusable interpreter, a run name that is taken, a project folder inside a <c>YOLO\models</c> folder - is reported before the first step starts, with the option it concerns as the step name.</para>
         /// <para>With <see cref="YOLOTrainingRunOptions.ResumeTraining"/> the run continues the interrupted checkpoint in <c>&lt;ProjectDirectory&gt;\&lt;RunName&gt;\weights\last.pt</c> instead of starting a new one. The preflight then refuses a run without the <see cref="YOLOTrainingStep.Train"/> step, a selected <see cref="YOLOTrainingStep.Dataset"/> step, a completed run, a missing checkpoint, a finished checkpoint, a checkpoint whose dataset is gone and one whose recorded run folder was moved or renamed - each named by the option it concerns, before the training starts. The tail is identical to a fresh run, and the result reports the resume and the epoch it entered.</para>
-        /// <para>With <see cref="YOLOTrainingRunOptions.AutoResumeCount"/> the run continues a training that stalled or crashed, up to that many times and without an operator, each time from the run's own <c>weights\last.pt</c> after copying it aside. A refusal raised before a process started, a finished checkpoint and a stop requested through the token are never resumed; each automatic resume is logged and recorded in <see cref="YOLOTrainingRunResult.AutoResumes"/>.</para>
+        /// <para>With <see cref="YOLOTrainingRunOptions.AutoResumeCount"/> the run continues a training that stalled or crashed, up to that many times and without an operator, each time from the run's own <c>weights\last.pt</c> after copying it aside. A refusal raised before a process started, a finished checkpoint and a stop requested through the token are never resumed; each automatic resume is logged with the epoch it interrupted and recorded in <see cref="YOLOTrainingRunResult.AutoResumes"/>. A crash is preceded in the log by the last <see cref="Constants.Count.CrashErrorOutputLines"/> lines of the attempt's standard error, its only record once the resumed attempt replaces its result.</para>
         /// <para>The trained weights are copied to <c>&lt;ProjectDirectory&gt;\&lt;RunName&gt;\&lt;RunName&gt;.pt</c>, a new file that is never overwritten and never named <c>model</c>; the validation and the evaluation measure that copy, and its SHA-256 is compared with the one the training reported. The identity of the start weights and of the copy is written to the log and to <paramref name="information"/> as soon as it is known. Without the training step the validation measures the start weights, which gives the baseline a candidate is compared with.</para>
         /// <para>A cancellation is a result with <see cref="YOLOTrainingRunResult.Cancelled"/> set rather than an exception, and what earlier steps wrote is left as it is; the dataset manifest lets a re-run continue.</para>
         /// </summary>
@@ -532,7 +532,19 @@ namespace DiGi.GIS.YOLO.UI
                         int epoch = (yOLOCheckpointInformation.Epoch ?? 0) + 1;
                         string line = stalled
                             ? string.Format(CultureInfo.InvariantCulture, "Training stalled at epoch {0}{1} - automatic resume {2} of {3}", epoch, StalledLastOutput(yOLOTrainingResult?.StandardError), resumeNumber, yOLOTrainingRunOptions.AutoResumeCount)
-                            : string.Format(CultureInfo.InvariantCulture, "Training exited with code {0} - automatic resume {1} of {2}", exitCode, resumeNumber, yOLOTrainingRunOptions.AutoResumeCount);
+                            : string.Format(CultureInfo.InvariantCulture, "Training exited with code {0} at epoch {1} - automatic resume {2} of {3}", exitCode, epoch, resumeNumber, yOLOTrainingRunOptions.AutoResumeCount);
+
+                        // The resumed attempt replaces this one's result, so its error output is reported now or never:
+                        // a crash leaves no other record of why it exited (no traceback reaches the operating system's logs).
+                        if (!stalled)
+                        {
+                            List<string> standardError_Crash = [.. (yOLOTrainingResult?.StandardError ?? []).Where(x => !string.IsNullOrWhiteSpace(x)).TakeLast(Constants.Count.CrashErrorOutputLines)];
+                            Report(string.Format(CultureInfo.InvariantCulture, "Error output of the attempt that exited with code {0} (last {1} line(s)):", exitCode, standardError_Crash.Count));
+                            foreach (string value in standardError_Crash)
+                            {
+                                Report("  | " + value.TrimEnd());
+                            }
+                        }
 
                         Report(line);
 

@@ -28,5 +28,11 @@ namespace DiGi.GIS.YOLO.UI.Constants
         /// <para>A rough figure from the same sample building, whose orthophoto crops are ten to eighteen kilobytes each, plus a label file.</para>
         /// </summary>
         public const long ImageByte_Estimate = 16000;
+
+        /// <summary>
+        /// Gets the number of trailing standard-error lines of a crashed training attempt that are reported before it is resumed automatically.
+        /// <para>The attempt's output is not kept anywhere else: the runner pipes it, and the automatic resume replaces the attempt's result, so these lines are the only record of why it exited. Thirty lines hold a whole Python traceback through torch's data loader (the one seen on train9_fresh was about thirty-five lines, its last ones naming the exception).</para>
+        /// </summary>
+        public const int CrashErrorOutputLines = 30;
     }
 }

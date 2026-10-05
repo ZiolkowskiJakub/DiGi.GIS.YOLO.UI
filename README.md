@@ -223,7 +223,7 @@ A training can stop producing output while staying alive — a data-loader deadl
 
 - Only a **stall** or a **crash** (a non-zero exit code from a process that started) is resumed. A refusal raised before a process started, a finished checkpoint and a stop requested with Ctrl+C are never resumed.
 - Each resume first copies `weights\last.pt` to `weights\last_autoresume<N>_<yyyyMMdd_HHmmss>.pt`, then continues from `last.pt` with the epoch ceiling the checkpoint holds. The copy keeps the previous checkpoint recoverable if the process is killed while saving.
-- The log says `Training stalled at epoch E (last output hh:mm:ss) - automatic resume N of M`, or `Training exited with code X - automatic resume N of M`; the final table names each resume, and the result records them in `AutoResumes`. The tray reads those lines for its live status.
+- The log says `Training stalled at epoch E (last output hh:mm:ss) - automatic resume N of M`, or `Training exited with code X at epoch E - automatic resume N of M`, preceded by the last 30 lines of the crashed attempt's error output (`  | …`, its traceback); the final table names each resume, and the result records them in `AutoResumes`. The tray reads those lines for its live status.
 - The default is `0` — no retries — because a library must not retry unasked; the tray offers `3` for an unattended run. `InactivityTimeout` is a `TimeSpan` such as `00:15:00`; leave it unset for the `DiGi.YOLO` default, and note that `0` disables the limit rather than meaning "immediately".
 - A run still dies with the tray or a power cut: automatic resume shortens a stall or a crash, it does not make a run survive. That recovery is `ResumeTraining` above.
 
