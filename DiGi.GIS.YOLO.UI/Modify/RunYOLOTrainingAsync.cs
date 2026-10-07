@@ -288,7 +288,10 @@ namespace DiGi.GIS.YOLO.UI
 
             if (train)
             {
-                YOLOEnvironmentResult yOLOEnvironmentResult = DiGi.YOLO.Query.YOLOEnvironmentResult(pythonPath!, startWeightsPath!, workingDirectory ?? outputDirectory, cancellationToken);
+                // The preflight must not write into a dataset directory the Dataset step of the same run is still to
+                // build: with no working directory it probes in its own scratch folder, and the training itself keeps
+                // the dataset directory once the dataset exists.
+                YOLOEnvironmentResult yOLOEnvironmentResult = DiGi.YOLO.Query.YOLOEnvironmentResult(pythonPath!, startWeightsPath!, workingDirectory, cancellationToken);
                 if (!yOLOEnvironmentResult.Runnable)
                 {
                     Fail(nameof(DiGi.YOLO.Query.YOLOEnvironmentResult), string.Format(CultureInfo.InvariantCulture, "The interpreter cannot run the training: {0}", string.Join(" ", yOLOEnvironmentResult.Messages ?? [])));

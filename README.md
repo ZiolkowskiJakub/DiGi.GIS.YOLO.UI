@@ -182,6 +182,8 @@ These are rough figures from one sample building, meant to give the order of mag
 
 The trained weights are copied to `<ProjectDirectory>\<RunName>\<RunName>.pt`, a new file that is never overwritten and never named `model`. The start weights and the copy are printed and logged with their **SHA-256**, and the copy is re-hashed and compared with the digest the training reported, so every row of the comparison table names exactly which file it measures. Every path is made absolute, and everything that can be known without starting a process — a missing start file, an unusable interpreter, a run name that is taken, a `ProjectDirectory` inside a `YOLO\models` folder — is refused before the first step, with the option it concerns as the step name.
 
+With no working directory named, the interpreter preflight runs in its own scratch folder (`%TEMP%\DiGi_YOLO_Preflight`) and never writes into the dataset directory, so a new dataset directory stays empty for the `Dataset` step to build. The training itself still uses the dataset directory — the folder holding `conf.yaml` — once the dataset exists.
+
 Progress lines are the same `[PROGRESS]` / `[INFO]` lines as the other modes. The nested `DatasetOptions` is a plain object, exactly as in a `YOLOTrainingDatasetOptions` file.
 
 ### Options — `YOLOTrainingRunOptions`
