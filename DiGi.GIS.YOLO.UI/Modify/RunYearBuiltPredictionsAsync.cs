@@ -24,6 +24,8 @@ namespace DiGi.GIS.YOLO.UI
         /// <para>Six steps per county: export the imagery, score it with the frozen detector, turn the detections into objects, write them into the building data, read the feature columns back and score them into a construction year, and store that year twice - dated into the year built data, and latest into the building data column.</para>
         /// <para>Each step carries its own flag, so a run can be resumed without repeating the expensive ones, and the three write steps are off by default, so a first pass over a county reads and scores but stores nothing unless a write step is named on. Each step is idempotent: the scratch paths are derived from the county identifier, the detector overwrites its results file rather than appending to it, and a stored year built datum is read back and added to rather than replaced.</para>
         /// <para>Only a building the detector fired on at least once is scored. A building it never fired on carries no per-year confidence series, which is the feature the regressor was built around, so scoring it would be scoring a row of absent features. The consequence is that the run predicts a year for fewer buildings than the file based workflow it replaces, which scored every row of its table - worth knowing before comparing the two reference by reference.</para>
+        /// <para>The detection write is wider than the scoring: it covers every building whose imagery the detector was handed, and replaces each one's detection columns over <see cref="YearBuiltPredictionPipelineOptions.Years"/> as a whole. A building the current weights never fire on is therefore cleared rather than left carrying what earlier weights detected on it (ZiolkowskiJakub/DiGi.GIS.YOLO.UI#21).</para>
+        /// <para><see cref="YearBuiltPredictionPipelineOptions.ReferencesFilePath"/> narrows every step to the buildings of a dataset manifest, and a manifest that does not read refuses the run before any county is touched (ZiolkowskiJakub/DiGi.GIS.YOLO.UI#22).</para>
         /// <para>The scope is checked before any of it starts. A county identifier that is in no county row - most often a four character county code passed where an identifier was wanted - matches no stored building, so every step reports a legitimate zero and the run ends green having done nothing at all. That is a mis-scoped run rather than an empty county, so it fails here instead.</para>
         /// <para>The options are checked against the model before any county is read. Narrowing them - asking for fewer years or radiuses than the model was trained on - drops features the model was fitted on, so every prediction silently degrades and it is refused. Widening them only adds features the model ignores, so it warns.</para>
         /// <para>The scratch folder of a county that came through without a failed step is removed once the run has finished with it, unless <see cref="YearBuiltPredictionPipelineOptions.CleanScratchDirectory"/> says otherwise - so nothing downstream can depend on what a successful county left behind, which is the gap the two pass workflow used to carry. A county that failed keeps its folder, so re-running it costs seconds rather than repeating the export and the inference.</para>
@@ -153,6 +155,32 @@ namespace DiGi.GIS.YOLO.UI
             if (modelSHA256 is not null)
             {
                 messages.Add(string.Format(System.Globalization.CultureInfo.InvariantCulture, "Model SHA-256: {0} ({1})", modelSHA256, modelPath_Run));
+            }
+
+            // Read before anything is fetched and refused rather than ignored when it does not read: a filter that quietly
+            // reads as no filter would export, detect and write whole counties where a few buildings were asked for.
+            HashSet<string>? references_Filter = null;
+            if (!string.IsNullOrWhiteSpace(yearBuiltPredictionPipelineOptions.ReferencesFilePath))
+            {
+                string? path_References = Query.ModelPath(yearBuiltPredictionPipelineOptions.ReferencesFilePath);
+                List<DatasetReference>? datasetReferences = Query.DatasetReferences(path_References);
+
+                references_Filter = datasetReferences is null ? null : new(datasetReferences.Select(x => x.Reference).OfType<string>().Where(x => !string.IsNullOrWhiteSpace(x)), StringComparer.Ordinal);
+                if (references_Filter is null || references_Filter.Count == 0)
+                {
+                    string message = string.Format(System.Globalization.CultureInfo.InvariantCulture, "The reference manifest {0} is missing, unreadable or names no building, so the run cannot be narrowed to it and is refused rather than run over whole counties.", yearBuiltPredictionPipelineOptions.ReferencesFilePath);
+
+                    messages.Add(message);
+                    failedStepNames.Add(nameof(YearBuiltPredictionPipelineOptions.ReferencesFilePath));
+
+                    Serilog.Modify.Log(Serilog.Enums.LogEventLevel.Error, "{Method}: {Message}", nameof(RunYearBuiltPredictionsAsync), message);
+
+                    return Result();
+                }
+
+                messages.Add(string.Format(System.Globalization.CultureInfo.InvariantCulture, "Narrowed to the {0} building(s) of {1}", references_Filter.Count, path_References));
+
+                Serilog.Modify.Log("{Method}: narrowed to the {ReferenceCount} building(s) of {ReferencesFilePath}", nameof(RunYearBuiltPredictionsAsync), references_Filter.Count, path_References ?? string.Empty);
             }
 
             //The write steps are off by default, so reaching this point with one on is a deliberate choice, and the
@@ -384,7 +412,7 @@ namespace DiGi.GIS.YOLO.UI
 
                     if (yearBuiltPredictionPipelineOptions.ExportImages)
                     {
-                        bool exported = await gisWebAPIManager.ExportPredictionImagesAsync(countyId, directory_Images, maxConcurrentRequests, yearBuiltPredictionPipelineOptions.Resume, cancellationToken);
+                        bool exported = await gisWebAPIManager.ExportPredictionImagesAsync(countyId, directory_Images, maxConcurrentRequests, yearBuiltPredictionPipelineOptions.Resume, references: references_Filter, cancellationToken: cancellationToken);
                         if (!exported)
                         {
                             Fail(nameof(ExportPredictionImagesAsync), countyId);
@@ -449,7 +477,27 @@ namespace DiGi.GIS.YOLO.UI
                         building2DYearBuiltPredictions = DiGi.GIS.YOLO.Create.Building2DYearBuiltPredictions(DiGi.YOLO.Create.BoundingBoxResultFile(path_Results));
                     }
 
-                    if (building2DYearBuiltPredictions is null || building2DYearBuiltPredictions.Count == 0)
+                    // The folder may still hold imagery of buildings outside the filter from an earlier, wider run of the
+                    // same scratch directory; the detector scored it too, but the run was asked about these buildings only.
+                    if (references_Filter is not null && building2DYearBuiltPredictions is not null)
+                    {
+                        building2DYearBuiltPredictions = [.. building2DYearBuiltPredictions.Where(x => x?.Reference is string reference && references_Filter.Contains(reference))];
+                    }
+
+                    // Every building the detector was handed, fired on or not. The write replaces their detection columns
+                    // as a whole, so a building these weights do not fire on loses what earlier weights left on it rather
+                    // than keeping it beside this run's detections of its neighbours (ZiolkowskiJakub/DiGi.GIS.YOLO.UI#21).
+                    HashSet<string> references_Scored = Query.PredictionImageReferences(directory_Images);
+                    if (references_Filter is not null)
+                    {
+                        references_Scored.IntersectWith(references_Filter);
+                    }
+
+                    building2DYearBuiltPredictions ??= [];
+
+                    // A county the detector found nothing in still has its scored buildings cleared when detections are
+                    // written; only with nothing to write either is there nothing left to do for it.
+                    if (building2DYearBuiltPredictions.Count == 0 && (!yearBuiltPredictionPipelineOptions.UpdateDetections || references_Scored.Count == 0))
                     {
                         Serilog.Modify.Log("No year built detections for county {CountyId} over {ImageCount} images", countyId, imageCount_County);
                         continue;
@@ -466,10 +514,19 @@ namespace DiGi.GIS.YOLO.UI
 
                     if (yearBuiltPredictionPipelineOptions.UpdateDetections)
                     {
-                        bool updated = await gisWebAPIManager.UpdateBuildingDataYearBuiltPredictionsAsync(countyIds_County, building2DYearBuiltPredictions, batchSize, postOptions_Bulk);
+                        bool updated = await gisWebAPIManager.UpdateBuildingDataYearBuiltPredictionsAsync(countyIds_County, building2DYearBuiltPredictions, batchSize, postOptions_Bulk, references: references_Scored, years: yearBuiltPredictionPipelineOptions.Years);
                         if (updated)
                         {
-                            buildingDataUpdatedCount += building2DYearBuiltPredictions.Count;
+                            HashSet<string> references_Written = new(references_Scored, StringComparer.Ordinal);
+                            foreach (Building2DYearBuiltPredictions building2DYearBuiltPredictions_Temp in building2DYearBuiltPredictions)
+                            {
+                                if (building2DYearBuiltPredictions_Temp?.Reference is string reference)
+                                {
+                                    references_Written.Add(reference);
+                                }
+                            }
+
+                            buildingDataUpdatedCount += references_Written.Count;
                         }
                         else
                         {
@@ -483,7 +540,8 @@ namespace DiGi.GIS.YOLO.UI
                         }
                     }
 
-                    if (!yearBuiltPredictionPipelineOptions.Score)
+                    // Only a building the detector fired on is scored - see the summary.
+                    if (!yearBuiltPredictionPipelineOptions.Score || building2DYearBuiltPredictions.Count == 0)
                     {
                         continue;
                     }

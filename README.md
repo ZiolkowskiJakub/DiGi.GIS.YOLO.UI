@@ -45,13 +45,40 @@ Every write step is off in the template on purpose: the pipeline writes deployed
 | Code | Meaning |
 |---|---|
 | 0 | The run completed and no step reported a failure. |
-| 1 | The options file could not be read, or names no county or no scratch directory. |
+| 1 | The options file could not be read, names no county or no scratch directory, narrows the model's feature contract, or names a `ReferencesFilePath` that does not read as a manifest. |
 | 2 | The environment preflight failed — this machine cannot run the detector, or the year built model is missing. |
 | 3 | No Web API authorization key was found. |
 | 4 | A step failed while running. |
 | 5 | The run was cancelled. |
 
 Each run logs the **SHA-256 of the detector weights** with its start line and adds it to `YearBuiltPredictionResult.Messages` (`Model SHA-256: …`). Stored detections carry only the run stamp, so this line is what ties a run to the detector that wrote it once `model.pt` has been replaced in place. Weights that exist but cannot be read to hash them are refused (exit code 2).
+
+### Writing detections with new weights
+
+The detection write (`UpdateDetections`) **replaces** each scored building's detection columns across `Years` (default 2008..2025). Every building whose imagery the detector was handed is written. A building it did not fire on is written with those columns set to NULL. Without this, a building the new weights never fire on would keep the previous detector's values, false positives included, beside the new detector's values for its neighbours ([#21](https://github.com/ZiolkowskiJakub/DiGi.GIS.YOLO.UI/issues/21)). Scoring still covers only the buildings the detector fired on.
+
+### Narrowing a run to a dataset's buildings — `ReferencesFilePath`
+
+`ReferencesFilePath` names a `dataset_references.tsv` manifest written by `--dataset`. Every step of the run is then restricted to the manifest's buildings within the named `CountyIds`. This is the detection rewrite a regressor retrain needs ([#22](https://github.com/ZiolkowskiJakub/DiGi.GIS.YOLO.UI/issues/22)): 25 008 labelled buildings take about an hour, where their 217 counties would take weeks.
+
+A manifest that is missing, has no header or names no building refuses the run before any request is sent (exit code 1, step `ReferencesFilePath`). The tray application never sets this option.
+
+Detection-only rewrite of the labelled buildings with candidate weights. `Score` and the two year-built writes are off, so no prediction is stored while the regressor still expects the old detector:
+
+```json
+{
+  "CountyIds": [ "...the 217 county identifiers of the dataset..." ],
+  "ScratchDirectory": "scratch",
+  "ModelPath": "user files/YOLO/models/model_train9_fresh.pt",
+  "ReferencesFilePath": "D:/YOLO/train9_dataset/dataset_references.tsv",
+  "ExportImages": true,
+  "RunPrediction": true,
+  "Score": false,
+  "UpdateDetections": true,
+  "UpdateYearBuiltData": false,
+  "UpdatePredictedYearBuilt": false
+}
+```
 
 ## The YOLO training dataset
 

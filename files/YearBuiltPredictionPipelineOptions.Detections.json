@@ -10,6 +10,7 @@
   "MaxConcurrentRequests": 8,
   "BatchSize": 5000,
   "ReferenceBatchSize": 10000,
+  "ReferencesFilePath": null,
   "Resume": true,
   "CleanScratchDirectory": false,
   "ExportImages": true,

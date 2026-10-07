@@ -71,6 +71,51 @@ public static class Create
 Inheritance [System\.Object](https://learn.microsoft.com/en-us/dotnet/api/system.object 'System\.Object') → Create
 ### Methods
 
+<a name='DiGi.GIS.YOLO.UI.Create.BuildingDataYearBuiltPredictionsTable(int,System.Collections.Generic.IEnumerable_DiGi.GIS.Classes.Building2DYearBuiltPredictions_,System.Collections.Generic.IEnumerable_string_,DiGi.Core.Classes.Range_int_)'></a>
+
+## Create\.BuildingDataYearBuiltPredictionsTable\(int, IEnumerable\<Building2DYearBuiltPredictions\>, IEnumerable\<string\>, Range\<int\>\) Method
+
+Builds the building data table a detection write posts: the reference, the county and the per\-year detection columns of each building\.
+
+With [references](DiGi.GIS.YOLO.UI.md#DiGi.GIS.YOLO.UI.Create.BuildingDataYearBuiltPredictionsTable(int,System.Collections.Generic.IEnumerable_DiGi.GIS.Classes.Building2DYearBuiltPredictions_,System.Collections.Generic.IEnumerable_string_,DiGi.Core.Classes.Range_int_).references 'DiGi\.GIS\.YOLO\.UI\.Create\.BuildingDataYearBuiltPredictionsTable\(int, System\.Collections\.Generic\.IEnumerable\<DiGi\.GIS\.Classes\.Building2DYearBuiltPredictions\>, System\.Collections\.Generic\.IEnumerable\<string\>, DiGi\.Core\.Classes\.Range\<int\>\)\.references') null the table is exactly what [DiGi\.GIS\.IO\.Modify\.Update\_Building2D\_YearBuiltPredictions\(DiGi\.Core\.IO\.Table\.Classes\.Table,System\.Int32,System\.Collections\.Generic\.IEnumerable\{DiGi\.GIS\.Classes\.Building2DYearBuiltPredictions\}\)](https://learn.microsoft.com/en-us/dotnet/api/digi.gis.io.modify.update_building2d_yearbuiltpredictions#digi-gis-io-modify-update_building2d_yearbuiltpredictions(digi-core-io-table-classes-table-system-int32-system-collections-generic-ienumerable{digi-gis-classes-building2dyearbuiltpredictions}) 'DiGi\.GIS\.IO\.Modify\.Update\_Building2D\_YearBuiltPredictions\(DiGi\.Core\.IO\.Table\.Classes\.Table,System\.Int32,System\.Collections\.Generic\.IEnumerable\{DiGi\.GIS\.Classes\.Building2DYearBuiltPredictions\}\)') builds - a row per detected building and a column per year some building of the batch was detected in. The endpoint upserts every column on the table and writes an unset cell as NULL, but a building or a column that is not on the table is left as it stands.
+
+That is not enough once the weights change. A building the new detector does not fire on is not on the table, so the previous detector's values - its false positives included - stay on it, and the stored detections become a mix of two detectors that nothing reports (ZiolkowskiJakub/DiGi.GIS.YOLO.UI#21). Naming the scored [references](DiGi.GIS.YOLO.UI.md#DiGi.GIS.YOLO.UI.Create.BuildingDataYearBuiltPredictionsTable(int,System.Collections.Generic.IEnumerable_DiGi.GIS.Classes.Building2DYearBuiltPredictions_,System.Collections.Generic.IEnumerable_string_,DiGi.Core.Classes.Range_int_).references 'DiGi\.GIS\.YOLO\.UI\.Create\.BuildingDataYearBuiltPredictionsTable\(int, System\.Collections\.Generic\.IEnumerable\<DiGi\.GIS\.Classes\.Building2DYearBuiltPredictions\>, System\.Collections\.Generic\.IEnumerable\<string\>, DiGi\.Core\.Classes\.Range\<int\>\)\.references') makes the write a replacement instead: every detection column of [years](DiGi.GIS.YOLO.UI.md#DiGi.GIS.YOLO.UI.Create.BuildingDataYearBuiltPredictionsTable(int,System.Collections.Generic.IEnumerable_DiGi.GIS.Classes.Building2DYearBuiltPredictions_,System.Collections.Generic.IEnumerable_string_,DiGi.Core.Classes.Range_int_).years 'DiGi\.GIS\.YOLO\.UI\.Create\.BuildingDataYearBuiltPredictionsTable\(int, System\.Collections\.Generic\.IEnumerable\<DiGi\.GIS\.Classes\.Building2DYearBuiltPredictions\>, System\.Collections\.Generic\.IEnumerable\<string\>, DiGi\.Core\.Classes\.Range\<int\>\)\.years') is on the table, and every scored reference without a detection gets a row of its own with those cells unset, so each scored building's detection columns are overwritten as a whole.
+
+A detected year outside [years](DiGi.GIS.YOLO.UI.md#DiGi.GIS.YOLO.UI.Create.BuildingDataYearBuiltPredictionsTable(int,System.Collections.Generic.IEnumerable_DiGi.GIS.Classes.Building2DYearBuiltPredictions_,System.Collections.Generic.IEnumerable_string_,DiGi.Core.Classes.Range_int_).years 'DiGi\.GIS\.YOLO\.UI\.Create\.BuildingDataYearBuiltPredictionsTable\(int, System\.Collections\.Generic\.IEnumerable\<DiGi\.GIS\.Classes\.Building2DYearBuiltPredictions\>, System\.Collections\.Generic\.IEnumerable\<string\>, DiGi\.Core\.Classes\.Range\<int\>\)\.years') is still written where it was detected, as before, and is not cleared elsewhere - the regressor does not read it.
+
+```csharp
+public static DiGi.Core.IO.Table.Classes.Table? BuildingDataYearBuiltPredictionsTable(int countyId, System.Collections.Generic.IEnumerable<DiGi.GIS.Classes.Building2DYearBuiltPredictions>? building2DYearBuiltPredictions, System.Collections.Generic.IEnumerable<string>? references=null, DiGi.Core.Classes.Range<int>? years=null);
+```
+#### Parameters
+
+<a name='DiGi.GIS.YOLO.UI.Create.BuildingDataYearBuiltPredictionsTable(int,System.Collections.Generic.IEnumerable_DiGi.GIS.Classes.Building2DYearBuiltPredictions_,System.Collections.Generic.IEnumerable_string_,DiGi.Core.Classes.Range_int_).countyId'></a>
+
+`countyId` [System\.Int32](https://learn.microsoft.com/en-us/dotnet/api/system.int32 'System\.Int32')
+
+The county row the rows are stamped with\.
+
+<a name='DiGi.GIS.YOLO.UI.Create.BuildingDataYearBuiltPredictionsTable(int,System.Collections.Generic.IEnumerable_DiGi.GIS.Classes.Building2DYearBuiltPredictions_,System.Collections.Generic.IEnumerable_string_,DiGi.Core.Classes.Range_int_).building2DYearBuiltPredictions'></a>
+
+`building2DYearBuiltPredictions` [System\.Collections\.Generic\.IEnumerable&lt;](https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.ienumerable-1 'System\.Collections\.Generic\.IEnumerable\`1')[DiGi\.GIS\.Classes\.Building2DYearBuiltPredictions](https://learn.microsoft.com/en-us/dotnet/api/digi.gis.classes.building2dyearbuiltpredictions 'DiGi\.GIS\.Classes\.Building2DYearBuiltPredictions')[&gt;](https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.ienumerable-1 'System\.Collections\.Generic\.IEnumerable\`1')
+
+The detections, one instance per detected building\.
+
+<a name='DiGi.GIS.YOLO.UI.Create.BuildingDataYearBuiltPredictionsTable(int,System.Collections.Generic.IEnumerable_DiGi.GIS.Classes.Building2DYearBuiltPredictions_,System.Collections.Generic.IEnumerable_string_,DiGi.Core.Classes.Range_int_).references'></a>
+
+`references` [System\.Collections\.Generic\.IEnumerable&lt;](https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.ienumerable-1 'System\.Collections\.Generic\.IEnumerable\`1')[System\.String](https://learn.microsoft.com/en-us/dotnet/api/system.string 'System\.String')[&gt;](https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.ienumerable-1 'System\.Collections\.Generic\.IEnumerable\`1')
+
+The references the detector scored, detected or not\. Null keeps the table to the detected buildings and their detected years\.
+
+<a name='DiGi.GIS.YOLO.UI.Create.BuildingDataYearBuiltPredictionsTable(int,System.Collections.Generic.IEnumerable_DiGi.GIS.Classes.Building2DYearBuiltPredictions_,System.Collections.Generic.IEnumerable_string_,DiGi.Core.Classes.Range_int_).years'></a>
+
+`years` [DiGi\.Core\.Classes\.Range&lt;](https://learn.microsoft.com/en-us/dotnet/api/digi.core.classes.range-1 'DiGi\.Core\.Classes\.Range\`1')[System\.Int32](https://learn.microsoft.com/en-us/dotnet/api/system.int32 'System\.Int32')[&gt;](https://learn.microsoft.com/en-us/dotnet/api/digi.core.classes.range-1 'DiGi\.Core\.Classes\.Range\`1')
+
+The year range whose detection columns are replaced\. Null applies the default range of [DiGi\.GIS\.IO\.Query\.YearBuiltPredictionFeatureGroups\(DiGi\.Core\.Classes\.Range\{System\.Int32\},System\.Collections\.Generic\.IEnumerable\{System\.Double\}\)](https://learn.microsoft.com/en-us/dotnet/api/digi.gis.io.query.yearbuiltpredictionfeaturegroups#digi-gis-io-query-yearbuiltpredictionfeaturegroups(digi-core-classes-range{system-int32}-system-collections-generic-ienumerable{system-double}) 'DiGi\.GIS\.IO\.Query\.YearBuiltPredictionFeatureGroups\(DiGi\.Core\.Classes\.Range\{System\.Int32\},System\.Collections\.Generic\.IEnumerable\{System\.Double\}\)'), the same one the scoring step projects\. Ignored when [references](DiGi.GIS.YOLO.UI.md#DiGi.GIS.YOLO.UI.Create.BuildingDataYearBuiltPredictionsTable(int,System.Collections.Generic.IEnumerable_DiGi.GIS.Classes.Building2DYearBuiltPredictions_,System.Collections.Generic.IEnumerable_string_,DiGi.Core.Classes.Range_int_).references 'DiGi\.GIS\.YOLO\.UI\.Create\.BuildingDataYearBuiltPredictionsTable\(int, System\.Collections\.Generic\.IEnumerable\<DiGi\.GIS\.Classes\.Building2DYearBuiltPredictions\>, System\.Collections\.Generic\.IEnumerable\<string\>, DiGi\.Core\.Classes\.Range\<int\>\)\.references') is null\.
+
+#### Returns
+[DiGi\.Core\.IO\.Table\.Classes\.Table](https://learn.microsoft.com/en-us/dotnet/api/digi.core.io.table.classes.table 'DiGi\.Core\.IO\.Table\.Classes\.Table')  
+The table, which has no rows when there is nothing to write; null when the county is not a positive identifier\.
+
 <a name='DiGi.GIS.YOLO.UI.Create.ProgressMessage(long)'></a>
 
 ## Create\.ProgressMessage\(long\) Method
@@ -251,50 +296,58 @@ The [System\.Threading\.CancellationToken](https://learn.microsoft.com/en-us/dot
 [YOLODetectorEvaluationResult](DiGi.GIS.YOLO.UI.Classes.md#DiGi.GIS.YOLO.UI.Classes.YOLODetectorEvaluationResult 'DiGi\.GIS\.YOLO\.UI\.Classes\.YOLODetectorEvaluationResult')  
 The rows, or null when there are no options or no absolute dataset directory\.
 
-<a name='DiGi.GIS.YOLO.UI.Modify.ExportPredictionImagesAsync(thisDiGi.GIS.WebAPI.Classes.GISWebAPIManager,int,string,int,bool,System.Threading.CancellationToken)'></a>
+<a name='DiGi.GIS.YOLO.UI.Modify.ExportPredictionImagesAsync(thisDiGi.GIS.WebAPI.Classes.GISWebAPIManager,int,string,int,bool,System.Collections.Generic.IEnumerable_string_,System.Threading.CancellationToken)'></a>
 
-## Modify\.ExportPredictionImagesAsync\(this GISWebAPIManager, int, string, int, bool, CancellationToken\) Method
+## Modify\.ExportPredictionImagesAsync\(this GISWebAPIManager, int, string, int, bool, IEnumerable\<string\>, CancellationToken\) Method
 
 Exports orthophoto prediction images from the database for a specified county to the designated output directory\.
 
 Decodes binary payloads from [DiGi\.GIS\.Classes\.OrtoData\.Bytes](https://learn.microsoft.com/en-us/dotnet/api/digi.gis.classes.ortodata.bytes 'DiGi\.GIS\.Classes\.OrtoData\.Bytes') and re-encodes them as JPEG files named `{reference}_{year}.jpeg`.
 
+Named [references](DiGi.GIS.YOLO.UI.md#DiGi.GIS.YOLO.UI.Modify.ExportPredictionImagesAsync(thisDiGi.GIS.WebAPI.Classes.GISWebAPIManager,int,string,int,bool,System.Collections.Generic.IEnumerable_string_,System.Threading.CancellationToken).references 'DiGi\.GIS\.YOLO\.UI\.Modify\.ExportPredictionImagesAsync\(this DiGi\.GIS\.WebAPI\.Classes\.GISWebAPIManager, int, string, int, bool, System\.Collections\.Generic\.IEnumerable\<string\>, System\.Threading\.CancellationToken\)\.references') narrow the county to those buildings, so a run that only needs the labelled buildings of a training dataset does not fetch a whole county of imagery for them.
+
 ```csharp
-public static System.Threading.Tasks.Task<bool> ExportPredictionImagesAsync(this DiGi.GIS.WebAPI.Classes.GISWebAPIManager? gisWebAPIManager, int countyId, string? destinationDirectory, int maxConcurrentRequests=8, bool resume=true, System.Threading.CancellationToken cancellationToken=default(System.Threading.CancellationToken));
+public static System.Threading.Tasks.Task<bool> ExportPredictionImagesAsync(this DiGi.GIS.WebAPI.Classes.GISWebAPIManager? gisWebAPIManager, int countyId, string? destinationDirectory, int maxConcurrentRequests=8, bool resume=true, System.Collections.Generic.IEnumerable<string>? references=null, System.Threading.CancellationToken cancellationToken=default(System.Threading.CancellationToken));
 ```
 #### Parameters
 
-<a name='DiGi.GIS.YOLO.UI.Modify.ExportPredictionImagesAsync(thisDiGi.GIS.WebAPI.Classes.GISWebAPIManager,int,string,int,bool,System.Threading.CancellationToken).gisWebAPIManager'></a>
+<a name='DiGi.GIS.YOLO.UI.Modify.ExportPredictionImagesAsync(thisDiGi.GIS.WebAPI.Classes.GISWebAPIManager,int,string,int,bool,System.Collections.Generic.IEnumerable_string_,System.Threading.CancellationToken).gisWebAPIManager'></a>
 
 `gisWebAPIManager` [DiGi\.GIS\.WebAPI\.Classes\.GISWebAPIManager](https://learn.microsoft.com/en-us/dotnet/api/digi.gis.webapi.classes.giswebapimanager 'DiGi\.GIS\.WebAPI\.Classes\.GISWebAPIManager')
 
 The [DiGi\.GIS\.WebAPI\.Classes\.GISWebAPIManager](https://learn.microsoft.com/en-us/dotnet/api/digi.gis.webapi.classes.giswebapimanager 'DiGi\.GIS\.WebAPI\.Classes\.GISWebAPIManager') instance used to communicate with the WebAPI\.
 
-<a name='DiGi.GIS.YOLO.UI.Modify.ExportPredictionImagesAsync(thisDiGi.GIS.WebAPI.Classes.GISWebAPIManager,int,string,int,bool,System.Threading.CancellationToken).countyId'></a>
+<a name='DiGi.GIS.YOLO.UI.Modify.ExportPredictionImagesAsync(thisDiGi.GIS.WebAPI.Classes.GISWebAPIManager,int,string,int,bool,System.Collections.Generic.IEnumerable_string_,System.Threading.CancellationToken).countyId'></a>
 
 `countyId` [System\.Int32](https://learn.microsoft.com/en-us/dotnet/api/system.int32 'System\.Int32')
 
 The integer identifier of the county partition to export images for\.
 
-<a name='DiGi.GIS.YOLO.UI.Modify.ExportPredictionImagesAsync(thisDiGi.GIS.WebAPI.Classes.GISWebAPIManager,int,string,int,bool,System.Threading.CancellationToken).destinationDirectory'></a>
+<a name='DiGi.GIS.YOLO.UI.Modify.ExportPredictionImagesAsync(thisDiGi.GIS.WebAPI.Classes.GISWebAPIManager,int,string,int,bool,System.Collections.Generic.IEnumerable_string_,System.Threading.CancellationToken).destinationDirectory'></a>
 
 `destinationDirectory` [System\.String](https://learn.microsoft.com/en-us/dotnet/api/system.string 'System\.String')
 
 The target directory path on disk where JPEG files will be saved\.
 
-<a name='DiGi.GIS.YOLO.UI.Modify.ExportPredictionImagesAsync(thisDiGi.GIS.WebAPI.Classes.GISWebAPIManager,int,string,int,bool,System.Threading.CancellationToken).maxConcurrentRequests'></a>
+<a name='DiGi.GIS.YOLO.UI.Modify.ExportPredictionImagesAsync(thisDiGi.GIS.WebAPI.Classes.GISWebAPIManager,int,string,int,bool,System.Collections.Generic.IEnumerable_string_,System.Threading.CancellationToken).maxConcurrentRequests'></a>
 
 `maxConcurrentRequests` [System\.Int32](https://learn.microsoft.com/en-us/dotnet/api/system.int32 'System\.Int32')
 
 The maximum number of concurrent WebAPI requests allowed during image fetching\. Defaults to 8\.
 
-<a name='DiGi.GIS.YOLO.UI.Modify.ExportPredictionImagesAsync(thisDiGi.GIS.WebAPI.Classes.GISWebAPIManager,int,string,int,bool,System.Threading.CancellationToken).resume'></a>
+<a name='DiGi.GIS.YOLO.UI.Modify.ExportPredictionImagesAsync(thisDiGi.GIS.WebAPI.Classes.GISWebAPIManager,int,string,int,bool,System.Collections.Generic.IEnumerable_string_,System.Threading.CancellationToken).resume'></a>
 
 `resume` [System\.Boolean](https://learn.microsoft.com/en-us/dotnet/api/system.boolean 'System\.Boolean')
 
 When [true](https://docs.microsoft.com/en-us/dotnet/csharp/language-reference/builtin-types/bool 'https://docs\.microsoft\.com/en\-us/dotnet/csharp/language\-reference/builtin\-types/bool'), skips downloading or re\-encoding images already present on disk\. Defaults to [true](https://docs.microsoft.com/en-us/dotnet/csharp/language-reference/builtin-types/bool 'https://docs\.microsoft\.com/en\-us/dotnet/csharp/language\-reference/builtin\-types/bool')\.
 
-<a name='DiGi.GIS.YOLO.UI.Modify.ExportPredictionImagesAsync(thisDiGi.GIS.WebAPI.Classes.GISWebAPIManager,int,string,int,bool,System.Threading.CancellationToken).cancellationToken'></a>
+<a name='DiGi.GIS.YOLO.UI.Modify.ExportPredictionImagesAsync(thisDiGi.GIS.WebAPI.Classes.GISWebAPIManager,int,string,int,bool,System.Collections.Generic.IEnumerable_string_,System.Threading.CancellationToken).references'></a>
+
+`references` [System\.Collections\.Generic\.IEnumerable&lt;](https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.ienumerable-1 'System\.Collections\.Generic\.IEnumerable\`1')[System\.String](https://learn.microsoft.com/en-us/dotnet/api/system.string 'System\.String')[&gt;](https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.ienumerable-1 'System\.Collections\.Generic\.IEnumerable\`1')
+
+The only buildings to export, intersected with the county's orthophoto listing \- a reference the county does not hold is ignored\. Null exports every building of the county \(ZiolkowskiJakub/DiGi\.GIS\.YOLO\.UI\#22\)\.
+
+<a name='DiGi.GIS.YOLO.UI.Modify.ExportPredictionImagesAsync(thisDiGi.GIS.WebAPI.Classes.GISWebAPIManager,int,string,int,bool,System.Collections.Generic.IEnumerable_string_,System.Threading.CancellationToken).cancellationToken'></a>
 
 `cancellationToken` [System\.Threading\.CancellationToken](https://learn.microsoft.com/en-us/dotnet/api/system.threading.cancellationtoken 'System\.Threading\.CancellationToken')
 
@@ -315,6 +368,10 @@ Six steps per county: export the imagery, score it with the frozen detector, tur
 Each step carries its own flag, so a run can be resumed without repeating the expensive ones, and the three write steps are off by default, so a first pass over a county reads and scores but stores nothing unless a write step is named on. Each step is idempotent: the scratch paths are derived from the county identifier, the detector overwrites its results file rather than appending to it, and a stored year built datum is read back and added to rather than replaced.
 
 Only a building the detector fired on at least once is scored. A building it never fired on carries no per-year confidence series, which is the feature the regressor was built around, so scoring it would be scoring a row of absent features. The consequence is that the run predicts a year for fewer buildings than the file based workflow it replaces, which scored every row of its table - worth knowing before comparing the two reference by reference.
+
+The detection write is wider than the scoring: it covers every building whose imagery the detector was handed, and replaces each one's detection columns over [Years](DiGi.GIS.YOLO.UI.Classes.md#DiGi.GIS.YOLO.UI.Classes.YearBuiltPredictionPipelineOptions.Years 'DiGi\.GIS\.YOLO\.UI\.Classes\.YearBuiltPredictionPipelineOptions\.Years') as a whole. A building the current weights never fire on is therefore cleared rather than left carrying what earlier weights detected on it (ZiolkowskiJakub/DiGi.GIS.YOLO.UI#21).
+
+[ReferencesFilePath](DiGi.GIS.YOLO.UI.Classes.md#DiGi.GIS.YOLO.UI.Classes.YearBuiltPredictionPipelineOptions.ReferencesFilePath 'DiGi\.GIS\.YOLO\.UI\.Classes\.YearBuiltPredictionPipelineOptions\.ReferencesFilePath') narrows every step to the buildings of a dataset manifest, and a manifest that does not read refuses the run before any county is touched (ZiolkowskiJakub/DiGi.GIS.YOLO.UI#22).
 
 The scope is checked before any of it starts. A county identifier that is in no county row - most often a four character county code passed where an identifier was wanted - matches no stored building, so every step reports a legitimate zero and the run ends green having done nothing at all. That is a mis-scoped run rather than an empty county, so it fails here instead.
 
@@ -426,7 +483,7 @@ The result, or null when there are no options\.
 
 Decodes the orthophoto payload of an [DiGi\.GIS\.Classes\.OrtoData](https://learn.microsoft.com/en-us/dotnet/api/digi.gis.classes.ortodata 'DiGi\.GIS\.Classes\.OrtoData') and saves it as a JPEG file, reporting the pixel size of the saved image\.
 
-The one encoder both the inference export ([ExportPredictionImagesAsync\(this GISWebAPIManager, int, string, int, bool, CancellationToken\)](DiGi.GIS.YOLO.UI.md#DiGi.GIS.YOLO.UI.Modify.ExportPredictionImagesAsync(thisDiGi.GIS.WebAPI.Classes.GISWebAPIManager,int,string,int,bool,System.Threading.CancellationToken) 'DiGi\.GIS\.YOLO\.UI\.Modify\.ExportPredictionImagesAsync\(this DiGi\.GIS\.WebAPI\.Classes\.GISWebAPIManager, int, string, int, bool, System\.Threading\.CancellationToken\)')) and the training dataset builder ([AppendYOLOTrainingDatasetAsync\(this GISWebAPIManager, YOLOTrainingDatasetOptions, IProgress&lt;long&gt;, CancellationToken\)](DiGi.GIS.YOLO.UI.md#DiGi.GIS.YOLO.UI.Modify.AppendYOLOTrainingDatasetAsync(thisDiGi.GIS.WebAPI.Classes.GISWebAPIManager,DiGi.GIS.YOLO.UI.Classes.YOLOTrainingDatasetOptions,System.IProgress_long_,System.Threading.CancellationToken) 'DiGi\.GIS\.YOLO\.UI\.Modify\.AppendYOLOTrainingDatasetAsync\(this DiGi\.GIS\.WebAPI\.Classes\.GISWebAPIManager, DiGi\.GIS\.YOLO\.UI\.Classes\.YOLOTrainingDatasetOptions, System\.IProgress\<long\>, System\.Threading\.CancellationToken\)')) save through, so the detector is trained on the same pixels it is later asked to score. The legacy builder encoded training images with WPF and normalised label boxes by the device-independent width of the image; this one reports [System\.Drawing\.Image\.Width](https://learn.microsoft.com/en-us/dotnet/api/system.drawing.image.width 'System\.Drawing\.Image\.Width') and [System\.Drawing\.Image\.Height](https://learn.microsoft.com/en-us/dotnet/api/system.drawing.image.height 'System\.Drawing\.Image\.Height'), which System.Drawing gives in pixels.
+The one encoder both the inference export ([ExportPredictionImagesAsync\(this GISWebAPIManager, int, string, int, bool, IEnumerable&lt;string&gt;, CancellationToken\)](DiGi.GIS.YOLO.UI.md#DiGi.GIS.YOLO.UI.Modify.ExportPredictionImagesAsync(thisDiGi.GIS.WebAPI.Classes.GISWebAPIManager,int,string,int,bool,System.Collections.Generic.IEnumerable_string_,System.Threading.CancellationToken) 'DiGi\.GIS\.YOLO\.UI\.Modify\.ExportPredictionImagesAsync\(this DiGi\.GIS\.WebAPI\.Classes\.GISWebAPIManager, int, string, int, bool, System\.Collections\.Generic\.IEnumerable\<string\>, System\.Threading\.CancellationToken\)')) and the training dataset builder ([AppendYOLOTrainingDatasetAsync\(this GISWebAPIManager, YOLOTrainingDatasetOptions, IProgress&lt;long&gt;, CancellationToken\)](DiGi.GIS.YOLO.UI.md#DiGi.GIS.YOLO.UI.Modify.AppendYOLOTrainingDatasetAsync(thisDiGi.GIS.WebAPI.Classes.GISWebAPIManager,DiGi.GIS.YOLO.UI.Classes.YOLOTrainingDatasetOptions,System.IProgress_long_,System.Threading.CancellationToken) 'DiGi\.GIS\.YOLO\.UI\.Modify\.AppendYOLOTrainingDatasetAsync\(this DiGi\.GIS\.WebAPI\.Classes\.GISWebAPIManager, DiGi\.GIS\.YOLO\.UI\.Classes\.YOLOTrainingDatasetOptions, System\.IProgress\<long\>, System\.Threading\.CancellationToken\)')) save through, so the detector is trained on the same pixels it is later asked to score. The legacy builder encoded training images with WPF and normalised label boxes by the device-independent width of the image; this one reports [System\.Drawing\.Image\.Width](https://learn.microsoft.com/en-us/dotnet/api/system.drawing.image.width 'System\.Drawing\.Image\.Width') and [System\.Drawing\.Image\.Height](https://learn.microsoft.com/en-us/dotnet/api/system.drawing.image.height 'System\.Drawing\.Image\.Height'), which System.Drawing gives in pixels.
 
 The file is overwritten when it exists. Deciding whether to skip it is the caller's business.
 
@@ -463,62 +520,74 @@ When this method returns true, the height of the saved image in pixels; otherwis
 [System\.Boolean](https://learn.microsoft.com/en-us/dotnet/api/system.boolean 'System\.Boolean')  
 True when the image was decoded and saved; false when there was no payload or no path\.
 
-<a name='DiGi.GIS.YOLO.UI.Modify.UpdateBuildingDataYearBuiltPredictionsAsync(thisDiGi.GIS.WebAPI.Classes.GISWebAPIManager,int,System.Collections.Generic.IEnumerable_DiGi.GIS.Classes.Building2DYearBuiltPredictions_,int,DiGi.WebAPI.Classes.PostOptions,string)'></a>
+<a name='DiGi.GIS.YOLO.UI.Modify.UpdateBuildingDataYearBuiltPredictionsAsync(thisDiGi.GIS.WebAPI.Classes.GISWebAPIManager,int,System.Collections.Generic.IEnumerable_DiGi.GIS.Classes.Building2DYearBuiltPredictions_,int,DiGi.WebAPI.Classes.PostOptions,string,System.Collections.Generic.IEnumerable_string_,DiGi.Core.Classes.Range_int_)'></a>
 
-## Modify\.UpdateBuildingDataYearBuiltPredictionsAsync\(this GISWebAPIManager, int, IEnumerable\<Building2DYearBuiltPredictions\>, int, PostOptions, string\) Method
+## Modify\.UpdateBuildingDataYearBuiltPredictionsAsync\(this GISWebAPIManager, int, IEnumerable\<Building2DYearBuiltPredictions\>, int, PostOptions, string, IEnumerable\<string\>, Range\<int\>\) Method
 
 Writes the year built detection features of a run into the stored building data through the Web API, for one explicitly identified county row\.
 
 Where a county is stored as several polygon parts, call the [System\.Collections\.Generic\.IEnumerable&lt;&gt;](https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.ienumerable-1 'System\.Collections\.Generic\.IEnumerable\`1') overload with every part instead - naming one part files the whole batch there whether or not the buildings belong to it.
 
 ```csharp
-public static System.Threading.Tasks.Task<bool> UpdateBuildingDataYearBuiltPredictionsAsync(this DiGi.GIS.WebAPI.Classes.GISWebAPIManager? gisWebAPIManager, int countyId, System.Collections.Generic.IEnumerable<DiGi.GIS.Classes.Building2DYearBuiltPredictions>? building2DYearBuiltPredictions, int batchSize=5000, DiGi.WebAPI.Classes.PostOptions? postOptions=null, string? key=null);
+public static System.Threading.Tasks.Task<bool> UpdateBuildingDataYearBuiltPredictionsAsync(this DiGi.GIS.WebAPI.Classes.GISWebAPIManager? gisWebAPIManager, int countyId, System.Collections.Generic.IEnumerable<DiGi.GIS.Classes.Building2DYearBuiltPredictions>? building2DYearBuiltPredictions, int batchSize=5000, DiGi.WebAPI.Classes.PostOptions? postOptions=null, string? key=null, System.Collections.Generic.IEnumerable<string>? references=null, DiGi.Core.Classes.Range<int>? years=null);
 ```
 #### Parameters
 
-<a name='DiGi.GIS.YOLO.UI.Modify.UpdateBuildingDataYearBuiltPredictionsAsync(thisDiGi.GIS.WebAPI.Classes.GISWebAPIManager,int,System.Collections.Generic.IEnumerable_DiGi.GIS.Classes.Building2DYearBuiltPredictions_,int,DiGi.WebAPI.Classes.PostOptions,string).gisWebAPIManager'></a>
+<a name='DiGi.GIS.YOLO.UI.Modify.UpdateBuildingDataYearBuiltPredictionsAsync(thisDiGi.GIS.WebAPI.Classes.GISWebAPIManager,int,System.Collections.Generic.IEnumerable_DiGi.GIS.Classes.Building2DYearBuiltPredictions_,int,DiGi.WebAPI.Classes.PostOptions,string,System.Collections.Generic.IEnumerable_string_,DiGi.Core.Classes.Range_int_).gisWebAPIManager'></a>
 
 `gisWebAPIManager` [DiGi\.GIS\.WebAPI\.Classes\.GISWebAPIManager](https://learn.microsoft.com/en-us/dotnet/api/digi.gis.webapi.classes.giswebapimanager 'DiGi\.GIS\.WebAPI\.Classes\.GISWebAPIManager')
 
 The [DiGi\.GIS\.WebAPI\.Classes\.GISWebAPIManager](https://learn.microsoft.com/en-us/dotnet/api/digi.gis.webapi.classes.giswebapimanager 'DiGi\.GIS\.WebAPI\.Classes\.GISWebAPIManager') instance used to communicate with the WebAPI\.
 
-<a name='DiGi.GIS.YOLO.UI.Modify.UpdateBuildingDataYearBuiltPredictionsAsync(thisDiGi.GIS.WebAPI.Classes.GISWebAPIManager,int,System.Collections.Generic.IEnumerable_DiGi.GIS.Classes.Building2DYearBuiltPredictions_,int,DiGi.WebAPI.Classes.PostOptions,string).countyId'></a>
+<a name='DiGi.GIS.YOLO.UI.Modify.UpdateBuildingDataYearBuiltPredictionsAsync(thisDiGi.GIS.WebAPI.Classes.GISWebAPIManager,int,System.Collections.Generic.IEnumerable_DiGi.GIS.Classes.Building2DYearBuiltPredictions_,int,DiGi.WebAPI.Classes.PostOptions,string,System.Collections.Generic.IEnumerable_string_,DiGi.Core.Classes.Range_int_).countyId'></a>
 
 `countyId` [System\.Int32](https://learn.microsoft.com/en-us/dotnet/api/system.int32 'System\.Int32')
 
 The identifier of the county row the buildings belong to\.
 
-<a name='DiGi.GIS.YOLO.UI.Modify.UpdateBuildingDataYearBuiltPredictionsAsync(thisDiGi.GIS.WebAPI.Classes.GISWebAPIManager,int,System.Collections.Generic.IEnumerable_DiGi.GIS.Classes.Building2DYearBuiltPredictions_,int,DiGi.WebAPI.Classes.PostOptions,string).building2DYearBuiltPredictions'></a>
+<a name='DiGi.GIS.YOLO.UI.Modify.UpdateBuildingDataYearBuiltPredictionsAsync(thisDiGi.GIS.WebAPI.Classes.GISWebAPIManager,int,System.Collections.Generic.IEnumerable_DiGi.GIS.Classes.Building2DYearBuiltPredictions_,int,DiGi.WebAPI.Classes.PostOptions,string,System.Collections.Generic.IEnumerable_string_,DiGi.Core.Classes.Range_int_).building2DYearBuiltPredictions'></a>
 
 `building2DYearBuiltPredictions` [System\.Collections\.Generic\.IEnumerable&lt;](https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.ienumerable-1 'System\.Collections\.Generic\.IEnumerable\`1')[DiGi\.GIS\.Classes\.Building2DYearBuiltPredictions](https://learn.microsoft.com/en-us/dotnet/api/digi.gis.classes.building2dyearbuiltpredictions 'DiGi\.GIS\.Classes\.Building2DYearBuiltPredictions')[&gt;](https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.ienumerable-1 'System\.Collections\.Generic\.IEnumerable\`1')
 
 The detections to write, one instance per building\.
 
-<a name='DiGi.GIS.YOLO.UI.Modify.UpdateBuildingDataYearBuiltPredictionsAsync(thisDiGi.GIS.WebAPI.Classes.GISWebAPIManager,int,System.Collections.Generic.IEnumerable_DiGi.GIS.Classes.Building2DYearBuiltPredictions_,int,DiGi.WebAPI.Classes.PostOptions,string).batchSize'></a>
+<a name='DiGi.GIS.YOLO.UI.Modify.UpdateBuildingDataYearBuiltPredictionsAsync(thisDiGi.GIS.WebAPI.Classes.GISWebAPIManager,int,System.Collections.Generic.IEnumerable_DiGi.GIS.Classes.Building2DYearBuiltPredictions_,int,DiGi.WebAPI.Classes.PostOptions,string,System.Collections.Generic.IEnumerable_string_,DiGi.Core.Classes.Range_int_).batchSize'></a>
 
 `batchSize` [System\.Int32](https://learn.microsoft.com/en-us/dotnet/api/system.int32 'System\.Int32')
 
 The number of buildings sent in one request\. Defaults to 5000\.
 
-<a name='DiGi.GIS.YOLO.UI.Modify.UpdateBuildingDataYearBuiltPredictionsAsync(thisDiGi.GIS.WebAPI.Classes.GISWebAPIManager,int,System.Collections.Generic.IEnumerable_DiGi.GIS.Classes.Building2DYearBuiltPredictions_,int,DiGi.WebAPI.Classes.PostOptions,string).postOptions'></a>
+<a name='DiGi.GIS.YOLO.UI.Modify.UpdateBuildingDataYearBuiltPredictionsAsync(thisDiGi.GIS.WebAPI.Classes.GISWebAPIManager,int,System.Collections.Generic.IEnumerable_DiGi.GIS.Classes.Building2DYearBuiltPredictions_,int,DiGi.WebAPI.Classes.PostOptions,string,System.Collections.Generic.IEnumerable_string_,DiGi.Core.Classes.Range_int_).postOptions'></a>
 
 `postOptions` [DiGi\.WebAPI\.Classes\.PostOptions](https://learn.microsoft.com/en-us/dotnet/api/digi.webapi.classes.postoptions 'DiGi\.WebAPI\.Classes\.PostOptions')
 
 Optional configuration options for the POST request\.
 
-<a name='DiGi.GIS.YOLO.UI.Modify.UpdateBuildingDataYearBuiltPredictionsAsync(thisDiGi.GIS.WebAPI.Classes.GISWebAPIManager,int,System.Collections.Generic.IEnumerable_DiGi.GIS.Classes.Building2DYearBuiltPredictions_,int,DiGi.WebAPI.Classes.PostOptions,string).key'></a>
+<a name='DiGi.GIS.YOLO.UI.Modify.UpdateBuildingDataYearBuiltPredictionsAsync(thisDiGi.GIS.WebAPI.Classes.GISWebAPIManager,int,System.Collections.Generic.IEnumerable_DiGi.GIS.Classes.Building2DYearBuiltPredictions_,int,DiGi.WebAPI.Classes.PostOptions,string,System.Collections.Generic.IEnumerable_string_,DiGi.Core.Classes.Range_int_).key'></a>
 
 `key` [System\.String](https://learn.microsoft.com/en-us/dotnet/api/system.string 'System\.String')
 
-The optional API authorization key\. Falls back to the key carried by [postOptions](DiGi.GIS.YOLO.UI.md#DiGi.GIS.YOLO.UI.Modify.UpdateBuildingDataYearBuiltPredictionsAsync(thisDiGi.GIS.WebAPI.Classes.GISWebAPIManager,int,System.Collections.Generic.IEnumerable_DiGi.GIS.Classes.Building2DYearBuiltPredictions_,int,DiGi.WebAPI.Classes.PostOptions,string).postOptions 'DiGi\.GIS\.YOLO\.UI\.Modify\.UpdateBuildingDataYearBuiltPredictionsAsync\(this DiGi\.GIS\.WebAPI\.Classes\.GISWebAPIManager, int, System\.Collections\.Generic\.IEnumerable\<DiGi\.GIS\.Classes\.Building2DYearBuiltPredictions\>, int, DiGi\.WebAPI\.Classes\.PostOptions, string\)\.postOptions') and then by the manager\.
+The optional API authorization key\. Falls back to the key carried by [postOptions](DiGi.GIS.YOLO.UI.md#DiGi.GIS.YOLO.UI.Modify.UpdateBuildingDataYearBuiltPredictionsAsync(thisDiGi.GIS.WebAPI.Classes.GISWebAPIManager,int,System.Collections.Generic.IEnumerable_DiGi.GIS.Classes.Building2DYearBuiltPredictions_,int,DiGi.WebAPI.Classes.PostOptions,string,System.Collections.Generic.IEnumerable_string_,DiGi.Core.Classes.Range_int_).postOptions 'DiGi\.GIS\.YOLO\.UI\.Modify\.UpdateBuildingDataYearBuiltPredictionsAsync\(this DiGi\.GIS\.WebAPI\.Classes\.GISWebAPIManager, int, System\.Collections\.Generic\.IEnumerable\<DiGi\.GIS\.Classes\.Building2DYearBuiltPredictions\>, int, DiGi\.WebAPI\.Classes\.PostOptions, string, System\.Collections\.Generic\.IEnumerable\<string\>, DiGi\.Core\.Classes\.Range\<int\>\)\.postOptions') and then by the manager\.
+
+<a name='DiGi.GIS.YOLO.UI.Modify.UpdateBuildingDataYearBuiltPredictionsAsync(thisDiGi.GIS.WebAPI.Classes.GISWebAPIManager,int,System.Collections.Generic.IEnumerable_DiGi.GIS.Classes.Building2DYearBuiltPredictions_,int,DiGi.WebAPI.Classes.PostOptions,string,System.Collections.Generic.IEnumerable_string_,DiGi.Core.Classes.Range_int_).references'></a>
+
+`references` [System\.Collections\.Generic\.IEnumerable&lt;](https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.ienumerable-1 'System\.Collections\.Generic\.IEnumerable\`1')[System\.String](https://learn.microsoft.com/en-us/dotnet/api/system.string 'System\.String')[&gt;](https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.ienumerable-1 'System\.Collections\.Generic\.IEnumerable\`1')
+
+The references the detector scored, detected or not\. Null writes only the detected buildings\.
+
+<a name='DiGi.GIS.YOLO.UI.Modify.UpdateBuildingDataYearBuiltPredictionsAsync(thisDiGi.GIS.WebAPI.Classes.GISWebAPIManager,int,System.Collections.Generic.IEnumerable_DiGi.GIS.Classes.Building2DYearBuiltPredictions_,int,DiGi.WebAPI.Classes.PostOptions,string,System.Collections.Generic.IEnumerable_string_,DiGi.Core.Classes.Range_int_).years'></a>
+
+`years` [DiGi\.Core\.Classes\.Range&lt;](https://learn.microsoft.com/en-us/dotnet/api/digi.core.classes.range-1 'DiGi\.Core\.Classes\.Range\`1')[System\.Int32](https://learn.microsoft.com/en-us/dotnet/api/system.int32 'System\.Int32')[&gt;](https://learn.microsoft.com/en-us/dotnet/api/digi.core.classes.range-1 'DiGi\.Core\.Classes\.Range\`1')
+
+The year range whose detection columns are replaced when [references](DiGi.GIS.YOLO.UI.md#DiGi.GIS.YOLO.UI.Modify.UpdateBuildingDataYearBuiltPredictionsAsync(thisDiGi.GIS.WebAPI.Classes.GISWebAPIManager,int,System.Collections.Generic.IEnumerable_DiGi.GIS.Classes.Building2DYearBuiltPredictions_,int,DiGi.WebAPI.Classes.PostOptions,string,System.Collections.Generic.IEnumerable_string_,DiGi.Core.Classes.Range_int_).references 'DiGi\.GIS\.YOLO\.UI\.Modify\.UpdateBuildingDataYearBuiltPredictionsAsync\(this DiGi\.GIS\.WebAPI\.Classes\.GISWebAPIManager, int, System\.Collections\.Generic\.IEnumerable\<DiGi\.GIS\.Classes\.Building2DYearBuiltPredictions\>, int, DiGi\.WebAPI\.Classes\.PostOptions, string, System\.Collections\.Generic\.IEnumerable\<string\>, DiGi\.Core\.Classes\.Range\<int\>\)\.references') are named\. Null applies the scoring step's default range\.
 
 #### Returns
 [System\.Threading\.Tasks\.Task&lt;](https://learn.microsoft.com/en-us/dotnet/api/system.threading.tasks.task-1 'System\.Threading\.Tasks\.Task\`1')[System\.Boolean](https://learn.microsoft.com/en-us/dotnet/api/system.boolean 'System\.Boolean')[&gt;](https://learn.microsoft.com/en-us/dotnet/api/system.threading.tasks.task-1 'System\.Threading\.Tasks\.Task\`1')  
 A task returning [true](https://docs.microsoft.com/en-us/dotnet/csharp/language-reference/builtin-types/bool 'https://docs\.microsoft\.com/en\-us/dotnet/csharp/language\-reference/builtin\-types/bool') when every batch was accepted; otherwise [false](https://docs.microsoft.com/en-us/dotnet/csharp/language-reference/builtin-types/bool 'https://docs\.microsoft\.com/en\-us/dotnet/csharp/language\-reference/builtin\-types/bool')\.
 
-<a name='DiGi.GIS.YOLO.UI.Modify.UpdateBuildingDataYearBuiltPredictionsAsync(thisDiGi.GIS.WebAPI.Classes.GISWebAPIManager,System.Collections.Generic.IEnumerable_int_,System.Collections.Generic.IEnumerable_DiGi.GIS.Classes.Building2DYearBuiltPredictions_,int,DiGi.WebAPI.Classes.PostOptions,string)'></a>
+<a name='DiGi.GIS.YOLO.UI.Modify.UpdateBuildingDataYearBuiltPredictionsAsync(thisDiGi.GIS.WebAPI.Classes.GISWebAPIManager,System.Collections.Generic.IEnumerable_int_,System.Collections.Generic.IEnumerable_DiGi.GIS.Classes.Building2DYearBuiltPredictions_,int,DiGi.WebAPI.Classes.PostOptions,string,System.Collections.Generic.IEnumerable_string_,DiGi.Core.Classes.Range_int_)'></a>
 
-## Modify\.UpdateBuildingDataYearBuiltPredictionsAsync\(this GISWebAPIManager, IEnumerable\<int\>, IEnumerable\<Building2DYearBuiltPredictions\>, int, PostOptions, string\) Method
+## Modify\.UpdateBuildingDataYearBuiltPredictionsAsync\(this GISWebAPIManager, IEnumerable\<int\>, IEnumerable\<Building2DYearBuiltPredictions\>, int, PostOptions, string, IEnumerable\<string\>, Range\<int\>\) Method
 
 Writes the year built detection features of a run into the stored building data through the Web API\.
 
@@ -528,46 +597,60 @@ This is where the detections are written from. The database side cannot do it: n
 
 A county is tens of thousands of buildings against ninety-odd detection columns, so the predictions are sent in batches rather than as one request.
 
+Naming the scored [references](DiGi.GIS.YOLO.UI.md#DiGi.GIS.YOLO.UI.Modify.UpdateBuildingDataYearBuiltPredictionsAsync(thisDiGi.GIS.WebAPI.Classes.GISWebAPIManager,System.Collections.Generic.IEnumerable_int_,System.Collections.Generic.IEnumerable_DiGi.GIS.Classes.Building2DYearBuiltPredictions_,int,DiGi.WebAPI.Classes.PostOptions,string,System.Collections.Generic.IEnumerable_string_,DiGi.Core.Classes.Range_int_).references 'DiGi\.GIS\.YOLO\.UI\.Modify\.UpdateBuildingDataYearBuiltPredictionsAsync\(this DiGi\.GIS\.WebAPI\.Classes\.GISWebAPIManager, System\.Collections\.Generic\.IEnumerable\<int\>, System\.Collections\.Generic\.IEnumerable\<DiGi\.GIS\.Classes\.Building2DYearBuiltPredictions\>, int, DiGi\.WebAPI\.Classes\.PostOptions, string, System\.Collections\.Generic\.IEnumerable\<string\>, DiGi\.Core\.Classes\.Range\<int\>\)\.references') turns the write into a replacement of each scored building's detection columns over [years](DiGi.GIS.YOLO.UI.md#DiGi.GIS.YOLO.UI.Modify.UpdateBuildingDataYearBuiltPredictionsAsync(thisDiGi.GIS.WebAPI.Classes.GISWebAPIManager,System.Collections.Generic.IEnumerable_int_,System.Collections.Generic.IEnumerable_DiGi.GIS.Classes.Building2DYearBuiltPredictions_,int,DiGi.WebAPI.Classes.PostOptions,string,System.Collections.Generic.IEnumerable_string_,DiGi.Core.Classes.Range_int_).years 'DiGi\.GIS\.YOLO\.UI\.Modify\.UpdateBuildingDataYearBuiltPredictionsAsync\(this DiGi\.GIS\.WebAPI\.Classes\.GISWebAPIManager, System\.Collections\.Generic\.IEnumerable\<int\>, System\.Collections\.Generic\.IEnumerable\<DiGi\.GIS\.Classes\.Building2DYearBuiltPredictions\>, int, DiGi\.WebAPI\.Classes\.PostOptions, string, System\.Collections\.Generic\.IEnumerable\<string\>, DiGi\.Core\.Classes\.Range\<int\>\)\.years'), so a building the current weights do not fire on loses what an earlier detector left on it ([BuildingDataYearBuiltPredictionsTable\(int, IEnumerable&lt;Building2DYearBuiltPredictions&gt;, IEnumerable&lt;string&gt;, Range&lt;int&gt;\)](DiGi.GIS.YOLO.UI.md#DiGi.GIS.YOLO.UI.Create.BuildingDataYearBuiltPredictionsTable(int,System.Collections.Generic.IEnumerable_DiGi.GIS.Classes.Building2DYearBuiltPredictions_,System.Collections.Generic.IEnumerable_string_,DiGi.Core.Classes.Range_int_) 'DiGi\.GIS\.YOLO\.UI\.Create\.BuildingDataYearBuiltPredictionsTable\(int, System\.Collections\.Generic\.IEnumerable\<DiGi\.GIS\.Classes\.Building2DYearBuiltPredictions\>, System\.Collections\.Generic\.IEnumerable\<string\>, DiGi\.Core\.Classes\.Range\<int\>\)'), ZiolkowskiJakub/DiGi.GIS.YOLO.UI#21). Without them only the detected buildings and years are written, as before.
+
 ```csharp
-public static System.Threading.Tasks.Task<bool> UpdateBuildingDataYearBuiltPredictionsAsync(this DiGi.GIS.WebAPI.Classes.GISWebAPIManager? gisWebAPIManager, System.Collections.Generic.IEnumerable<int>? countyIds, System.Collections.Generic.IEnumerable<DiGi.GIS.Classes.Building2DYearBuiltPredictions>? building2DYearBuiltPredictions, int batchSize=5000, DiGi.WebAPI.Classes.PostOptions? postOptions=null, string? key=null);
+public static System.Threading.Tasks.Task<bool> UpdateBuildingDataYearBuiltPredictionsAsync(this DiGi.GIS.WebAPI.Classes.GISWebAPIManager? gisWebAPIManager, System.Collections.Generic.IEnumerable<int>? countyIds, System.Collections.Generic.IEnumerable<DiGi.GIS.Classes.Building2DYearBuiltPredictions>? building2DYearBuiltPredictions, int batchSize=5000, DiGi.WebAPI.Classes.PostOptions? postOptions=null, string? key=null, System.Collections.Generic.IEnumerable<string>? references=null, DiGi.Core.Classes.Range<int>? years=null);
 ```
 #### Parameters
 
-<a name='DiGi.GIS.YOLO.UI.Modify.UpdateBuildingDataYearBuiltPredictionsAsync(thisDiGi.GIS.WebAPI.Classes.GISWebAPIManager,System.Collections.Generic.IEnumerable_int_,System.Collections.Generic.IEnumerable_DiGi.GIS.Classes.Building2DYearBuiltPredictions_,int,DiGi.WebAPI.Classes.PostOptions,string).gisWebAPIManager'></a>
+<a name='DiGi.GIS.YOLO.UI.Modify.UpdateBuildingDataYearBuiltPredictionsAsync(thisDiGi.GIS.WebAPI.Classes.GISWebAPIManager,System.Collections.Generic.IEnumerable_int_,System.Collections.Generic.IEnumerable_DiGi.GIS.Classes.Building2DYearBuiltPredictions_,int,DiGi.WebAPI.Classes.PostOptions,string,System.Collections.Generic.IEnumerable_string_,DiGi.Core.Classes.Range_int_).gisWebAPIManager'></a>
 
 `gisWebAPIManager` [DiGi\.GIS\.WebAPI\.Classes\.GISWebAPIManager](https://learn.microsoft.com/en-us/dotnet/api/digi.gis.webapi.classes.giswebapimanager 'DiGi\.GIS\.WebAPI\.Classes\.GISWebAPIManager')
 
 The [DiGi\.GIS\.WebAPI\.Classes\.GISWebAPIManager](https://learn.microsoft.com/en-us/dotnet/api/digi.gis.webapi.classes.giswebapimanager 'DiGi\.GIS\.WebAPI\.Classes\.GISWebAPIManager') instance used to communicate with the WebAPI\.
 
-<a name='DiGi.GIS.YOLO.UI.Modify.UpdateBuildingDataYearBuiltPredictionsAsync(thisDiGi.GIS.WebAPI.Classes.GISWebAPIManager,System.Collections.Generic.IEnumerable_int_,System.Collections.Generic.IEnumerable_DiGi.GIS.Classes.Building2DYearBuiltPredictions_,int,DiGi.WebAPI.Classes.PostOptions,string).countyIds'></a>
+<a name='DiGi.GIS.YOLO.UI.Modify.UpdateBuildingDataYearBuiltPredictionsAsync(thisDiGi.GIS.WebAPI.Classes.GISWebAPIManager,System.Collections.Generic.IEnumerable_int_,System.Collections.Generic.IEnumerable_DiGi.GIS.Classes.Building2DYearBuiltPredictions_,int,DiGi.WebAPI.Classes.PostOptions,string,System.Collections.Generic.IEnumerable_string_,DiGi.Core.Classes.Range_int_).countyIds'></a>
 
 `countyIds` [System\.Collections\.Generic\.IEnumerable&lt;](https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.ienumerable-1 'System\.Collections\.Generic\.IEnumerable\`1')[System\.Int32](https://learn.microsoft.com/en-us/dotnet/api/system.int32 'System\.Int32')[&gt;](https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.ienumerable-1 'System\.Collections\.Generic\.IEnumerable\`1')
 
 The identifiers of the county rows the buildings belong to\. Normally every polygon part of one county \- the endpoint files each row under the part its reference belongs to\.
 
-<a name='DiGi.GIS.YOLO.UI.Modify.UpdateBuildingDataYearBuiltPredictionsAsync(thisDiGi.GIS.WebAPI.Classes.GISWebAPIManager,System.Collections.Generic.IEnumerable_int_,System.Collections.Generic.IEnumerable_DiGi.GIS.Classes.Building2DYearBuiltPredictions_,int,DiGi.WebAPI.Classes.PostOptions,string).building2DYearBuiltPredictions'></a>
+<a name='DiGi.GIS.YOLO.UI.Modify.UpdateBuildingDataYearBuiltPredictionsAsync(thisDiGi.GIS.WebAPI.Classes.GISWebAPIManager,System.Collections.Generic.IEnumerable_int_,System.Collections.Generic.IEnumerable_DiGi.GIS.Classes.Building2DYearBuiltPredictions_,int,DiGi.WebAPI.Classes.PostOptions,string,System.Collections.Generic.IEnumerable_string_,DiGi.Core.Classes.Range_int_).building2DYearBuiltPredictions'></a>
 
 `building2DYearBuiltPredictions` [System\.Collections\.Generic\.IEnumerable&lt;](https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.ienumerable-1 'System\.Collections\.Generic\.IEnumerable\`1')[DiGi\.GIS\.Classes\.Building2DYearBuiltPredictions](https://learn.microsoft.com/en-us/dotnet/api/digi.gis.classes.building2dyearbuiltpredictions 'DiGi\.GIS\.Classes\.Building2DYearBuiltPredictions')[&gt;](https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.ienumerable-1 'System\.Collections\.Generic\.IEnumerable\`1')
 
 The detections to write, one instance per building\.
 
-<a name='DiGi.GIS.YOLO.UI.Modify.UpdateBuildingDataYearBuiltPredictionsAsync(thisDiGi.GIS.WebAPI.Classes.GISWebAPIManager,System.Collections.Generic.IEnumerable_int_,System.Collections.Generic.IEnumerable_DiGi.GIS.Classes.Building2DYearBuiltPredictions_,int,DiGi.WebAPI.Classes.PostOptions,string).batchSize'></a>
+<a name='DiGi.GIS.YOLO.UI.Modify.UpdateBuildingDataYearBuiltPredictionsAsync(thisDiGi.GIS.WebAPI.Classes.GISWebAPIManager,System.Collections.Generic.IEnumerable_int_,System.Collections.Generic.IEnumerable_DiGi.GIS.Classes.Building2DYearBuiltPredictions_,int,DiGi.WebAPI.Classes.PostOptions,string,System.Collections.Generic.IEnumerable_string_,DiGi.Core.Classes.Range_int_).batchSize'></a>
 
 `batchSize` [System\.Int32](https://learn.microsoft.com/en-us/dotnet/api/system.int32 'System\.Int32')
 
 The number of buildings sent in one request\. Defaults to 5000\.
 
-<a name='DiGi.GIS.YOLO.UI.Modify.UpdateBuildingDataYearBuiltPredictionsAsync(thisDiGi.GIS.WebAPI.Classes.GISWebAPIManager,System.Collections.Generic.IEnumerable_int_,System.Collections.Generic.IEnumerable_DiGi.GIS.Classes.Building2DYearBuiltPredictions_,int,DiGi.WebAPI.Classes.PostOptions,string).postOptions'></a>
+<a name='DiGi.GIS.YOLO.UI.Modify.UpdateBuildingDataYearBuiltPredictionsAsync(thisDiGi.GIS.WebAPI.Classes.GISWebAPIManager,System.Collections.Generic.IEnumerable_int_,System.Collections.Generic.IEnumerable_DiGi.GIS.Classes.Building2DYearBuiltPredictions_,int,DiGi.WebAPI.Classes.PostOptions,string,System.Collections.Generic.IEnumerable_string_,DiGi.Core.Classes.Range_int_).postOptions'></a>
 
 `postOptions` [DiGi\.WebAPI\.Classes\.PostOptions](https://learn.microsoft.com/en-us/dotnet/api/digi.webapi.classes.postoptions 'DiGi\.WebAPI\.Classes\.PostOptions')
 
 Optional configuration options for the POST request\.
 
-<a name='DiGi.GIS.YOLO.UI.Modify.UpdateBuildingDataYearBuiltPredictionsAsync(thisDiGi.GIS.WebAPI.Classes.GISWebAPIManager,System.Collections.Generic.IEnumerable_int_,System.Collections.Generic.IEnumerable_DiGi.GIS.Classes.Building2DYearBuiltPredictions_,int,DiGi.WebAPI.Classes.PostOptions,string).key'></a>
+<a name='DiGi.GIS.YOLO.UI.Modify.UpdateBuildingDataYearBuiltPredictionsAsync(thisDiGi.GIS.WebAPI.Classes.GISWebAPIManager,System.Collections.Generic.IEnumerable_int_,System.Collections.Generic.IEnumerable_DiGi.GIS.Classes.Building2DYearBuiltPredictions_,int,DiGi.WebAPI.Classes.PostOptions,string,System.Collections.Generic.IEnumerable_string_,DiGi.Core.Classes.Range_int_).key'></a>
 
 `key` [System\.String](https://learn.microsoft.com/en-us/dotnet/api/system.string 'System\.String')
 
-The optional API authorization key\. Falls back to the key carried by [postOptions](DiGi.GIS.YOLO.UI.md#DiGi.GIS.YOLO.UI.Modify.UpdateBuildingDataYearBuiltPredictionsAsync(thisDiGi.GIS.WebAPI.Classes.GISWebAPIManager,System.Collections.Generic.IEnumerable_int_,System.Collections.Generic.IEnumerable_DiGi.GIS.Classes.Building2DYearBuiltPredictions_,int,DiGi.WebAPI.Classes.PostOptions,string).postOptions 'DiGi\.GIS\.YOLO\.UI\.Modify\.UpdateBuildingDataYearBuiltPredictionsAsync\(this DiGi\.GIS\.WebAPI\.Classes\.GISWebAPIManager, System\.Collections\.Generic\.IEnumerable\<int\>, System\.Collections\.Generic\.IEnumerable\<DiGi\.GIS\.Classes\.Building2DYearBuiltPredictions\>, int, DiGi\.WebAPI\.Classes\.PostOptions, string\)\.postOptions') and then by the manager\.
+The optional API authorization key\. Falls back to the key carried by [postOptions](DiGi.GIS.YOLO.UI.md#DiGi.GIS.YOLO.UI.Modify.UpdateBuildingDataYearBuiltPredictionsAsync(thisDiGi.GIS.WebAPI.Classes.GISWebAPIManager,System.Collections.Generic.IEnumerable_int_,System.Collections.Generic.IEnumerable_DiGi.GIS.Classes.Building2DYearBuiltPredictions_,int,DiGi.WebAPI.Classes.PostOptions,string,System.Collections.Generic.IEnumerable_string_,DiGi.Core.Classes.Range_int_).postOptions 'DiGi\.GIS\.YOLO\.UI\.Modify\.UpdateBuildingDataYearBuiltPredictionsAsync\(this DiGi\.GIS\.WebAPI\.Classes\.GISWebAPIManager, System\.Collections\.Generic\.IEnumerable\<int\>, System\.Collections\.Generic\.IEnumerable\<DiGi\.GIS\.Classes\.Building2DYearBuiltPredictions\>, int, DiGi\.WebAPI\.Classes\.PostOptions, string, System\.Collections\.Generic\.IEnumerable\<string\>, DiGi\.Core\.Classes\.Range\<int\>\)\.postOptions') and then by the manager\.
+
+<a name='DiGi.GIS.YOLO.UI.Modify.UpdateBuildingDataYearBuiltPredictionsAsync(thisDiGi.GIS.WebAPI.Classes.GISWebAPIManager,System.Collections.Generic.IEnumerable_int_,System.Collections.Generic.IEnumerable_DiGi.GIS.Classes.Building2DYearBuiltPredictions_,int,DiGi.WebAPI.Classes.PostOptions,string,System.Collections.Generic.IEnumerable_string_,DiGi.Core.Classes.Range_int_).references'></a>
+
+`references` [System\.Collections\.Generic\.IEnumerable&lt;](https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.ienumerable-1 'System\.Collections\.Generic\.IEnumerable\`1')[System\.String](https://learn.microsoft.com/en-us/dotnet/api/system.string 'System\.String')[&gt;](https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.ienumerable-1 'System\.Collections\.Generic\.IEnumerable\`1')
+
+The references the detector scored, detected or not\. Null writes only the detected buildings\.
+
+<a name='DiGi.GIS.YOLO.UI.Modify.UpdateBuildingDataYearBuiltPredictionsAsync(thisDiGi.GIS.WebAPI.Classes.GISWebAPIManager,System.Collections.Generic.IEnumerable_int_,System.Collections.Generic.IEnumerable_DiGi.GIS.Classes.Building2DYearBuiltPredictions_,int,DiGi.WebAPI.Classes.PostOptions,string,System.Collections.Generic.IEnumerable_string_,DiGi.Core.Classes.Range_int_).years'></a>
+
+`years` [DiGi\.Core\.Classes\.Range&lt;](https://learn.microsoft.com/en-us/dotnet/api/digi.core.classes.range-1 'DiGi\.Core\.Classes\.Range\`1')[System\.Int32](https://learn.microsoft.com/en-us/dotnet/api/system.int32 'System\.Int32')[&gt;](https://learn.microsoft.com/en-us/dotnet/api/digi.core.classes.range-1 'DiGi\.Core\.Classes\.Range\`1')
+
+The year range whose detection columns are replaced when [references](DiGi.GIS.YOLO.UI.md#DiGi.GIS.YOLO.UI.Modify.UpdateBuildingDataYearBuiltPredictionsAsync(thisDiGi.GIS.WebAPI.Classes.GISWebAPIManager,System.Collections.Generic.IEnumerable_int_,System.Collections.Generic.IEnumerable_DiGi.GIS.Classes.Building2DYearBuiltPredictions_,int,DiGi.WebAPI.Classes.PostOptions,string,System.Collections.Generic.IEnumerable_string_,DiGi.Core.Classes.Range_int_).references 'DiGi\.GIS\.YOLO\.UI\.Modify\.UpdateBuildingDataYearBuiltPredictionsAsync\(this DiGi\.GIS\.WebAPI\.Classes\.GISWebAPIManager, System\.Collections\.Generic\.IEnumerable\<int\>, System\.Collections\.Generic\.IEnumerable\<DiGi\.GIS\.Classes\.Building2DYearBuiltPredictions\>, int, DiGi\.WebAPI\.Classes\.PostOptions, string, System\.Collections\.Generic\.IEnumerable\<string\>, DiGi\.Core\.Classes\.Range\<int\>\)\.references') are named\. Null applies the scoring step's default range\.
 
 #### Returns
 [System\.Threading\.Tasks\.Task&lt;](https://learn.microsoft.com/en-us/dotnet/api/system.threading.tasks.task-1 'System\.Threading\.Tasks\.Task\`1')[System\.Boolean](https://learn.microsoft.com/en-us/dotnet/api/system.boolean 'System\.Boolean')[&gt;](https://learn.microsoft.com/en-us/dotnet/api/system.threading.tasks.task-1 'System\.Threading\.Tasks\.Task\`1')  
@@ -1017,6 +1100,31 @@ When this method returns, true if the projected rectangle crossed an image edge 
 #### Returns
 [DiGi\.Geometry\.Planar\.Classes\.BoundingBox2D](https://learn.microsoft.com/en-us/dotnet/api/digi.geometry.planar.classes.boundingbox2d 'DiGi\.Geometry\.Planar\.Classes\.BoundingBox2D')  
 The pixel rectangle, with [DiGi\.Geometry\.Planar\.Classes\.BoundingBox2D\.Min](https://learn.microsoft.com/en-us/dotnet/api/digi.geometry.planar.classes.boundingbox2d.min 'DiGi\.Geometry\.Planar\.Classes\.BoundingBox2D\.Min') at its top\-left corner, or null when there is no image, no box, or no area left inside the image\.
+
+<a name='DiGi.GIS.YOLO.UI.Query.PredictionImageReferences(string)'></a>
+
+## Query\.PredictionImageReferences\(string\) Method
+
+Lists the building references whose orthophoto images are in a prediction image folder \- the buildings a detector run over that folder has scored, whether it fired on them or not\.
+
+The detector's results name only the buildings it fired on, so they cannot say which buildings were looked at and found empty. The image folder can: every `{reference}_{year}.jpeg` in it was handed to the detector. The detection write needs exactly that set to clear what an earlier detector left on a building the current one does not fire on (ZiolkowskiJakub/DiGi.GIS.YOLO.UI#21).
+
+Names are split by [TryParseImageFileName\(string, string, short\)](DiGi.GIS.YOLO.UI.md#DiGi.GIS.YOLO.UI.Query.TryParseImageFileName(string,string,short) 'DiGi\.GIS\.YOLO\.UI\.Query\.TryParseImageFileName\(string, string, short\)'); a file that does not parse is not a scored building and is skipped.
+
+```csharp
+public static System.Collections.Generic.HashSet<string> PredictionImageReferences(string? directory);
+```
+#### Parameters
+
+<a name='DiGi.GIS.YOLO.UI.Query.PredictionImageReferences(string).directory'></a>
+
+`directory` [System\.String](https://learn.microsoft.com/en-us/dotnet/api/system.string 'System\.String')
+
+The folder the detector ran over\.
+
+#### Returns
+[System\.Collections\.Generic\.HashSet&lt;](https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.hashset-1 'System\.Collections\.Generic\.HashSet\`1')[System\.String](https://learn.microsoft.com/en-us/dotnet/api/system.string 'System\.String')[&gt;](https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.hashset-1 'System\.Collections\.Generic\.HashSet\`1')  
+The references, compared ordinally; empty when the folder is missing or holds no image\.
 
 <a name='DiGi.GIS.YOLO.UI.Query.ProgressCount(string)'></a>
 
