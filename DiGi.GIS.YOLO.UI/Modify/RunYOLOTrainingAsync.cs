@@ -16,7 +16,8 @@ namespace DiGi.GIS.YOLO.UI
     {
         /// <summary>
         /// Runs the detector retraining as one run: builds or appends to the training dataset, checks its labels, trains from the start weights, validates the result on the Test split and scores it against the other detectors.
-        /// <para>The steps run in the order of <see cref="YOLOTrainingStep"/> and the run stops at the first one that fails; <see cref="YOLOTrainingRunOptions.Steps"/> narrows them. Every path is made absolute and every refusal that can be known up front - a missing start file, an unusable interpreter, a run name that is taken, a project folder inside a <c>YOLO\models</c> folder - is reported before the first step starts, with the option it concerns as the step name.</para>
+        /// <para>The steps run in the order of <see cref="YOLOTrainingStep"/> and the run stops at the first one that fails; <see cref="YOLOTrainingRunOptions.Steps"/> narrows them. Every path is made absolute and every refusal that can be known up front - a missing start file, an unusable interpreter, a run name that is taken, a project folder inside a <c>YOLO\models</c> folder, an empty Validate split - is reported before the first step starts, with the option it concerns as the step name.</para>
+        /// <para>An empty Validate split is refused for a run that trains on the dataset as it stands (a Train-only run, checked in the preflight before the interpreter is probed) and once the dataset is final for a run that still builds it (checked after the <see cref="YOLOTrainingStep.Dataset"/> step, before the label check). A resume is never checked: its checkpoint was trained on a dataset that already held a Validate split. The message names the split and the remedy - with the defaults a dataset needs at least 16 non-Test buildings.</para>
         /// <para>With <see cref="YOLOTrainingRunOptions.ResumeTraining"/> the run continues the interrupted checkpoint in <c>&lt;ProjectDirectory&gt;\&lt;RunName&gt;\weights\last.pt</c> instead of starting a new one. The preflight then refuses a run without the <see cref="YOLOTrainingStep.Train"/> step, a selected <see cref="YOLOTrainingStep.Dataset"/> step, a completed run, a missing checkpoint, a finished checkpoint, a checkpoint whose dataset is gone and one whose recorded run folder was moved or renamed - each named by the option it concerns, before the training starts. The tail is identical to a fresh run, and the result reports the resume and the epoch it entered.</para>
         /// <para>With <see cref="YOLOTrainingRunOptions.AutoResumeCount"/> the run continues a training that stalled or crashed, up to that many times and without an operator, each time from the run's own <c>weights\last.pt</c> after copying it aside. A refusal raised before a process started, a finished checkpoint and a stop requested through the token are never resumed; each automatic resume is logged with the epoch it interrupted and recorded in <see cref="YOLOTrainingRunResult.AutoResumes"/>. A crash is preceded in the log by the last <see cref="Constants.Count.CrashErrorOutputLines"/> lines of the attempt's standard error, its only record once the resumed attempt replaces its result.</para>
         /// <para>The trained weights are copied to <c>&lt;ProjectDirectory&gt;\&lt;RunName&gt;\&lt;RunName&gt;.pt</c>, a new file that is never overwritten and never named <c>model</c>; the validation and the evaluation measure that copy, and its SHA-256 is compared with the one the training reported. The identity of the start weights and of the copy is written to the log and to <paramref name="information"/> as soon as it is known. Without the training step the validation measures the start weights, which gives the baseline a candidate is compared with.</para>
@@ -171,6 +172,58 @@ namespace DiGi.GIS.YOLO.UI
 
             string path_Configuration = Path.Combine(outputDirectory, DiGi.YOLO.Constants.FileName.Conf);
 
+            // The Validate split. ultralytics trains against it, so an empty one fails about 25 s into the run with a
+            // traceback the operator has to decode. A small dataset has none: the non-Test buildings are drawn one by
+            // one against ValidateWeight, and with Seed 0 and ValidateWeight 0.1 the first Validate draw is the 16th.
+            // The guard fires only on a dataset that names a Validate split - the builder always writes one - so a run
+            // against a folder that is not such a dataset keeps the failure it already had.
+            bool ValidateSplitOk()
+            {
+                DiGi.YOLO.Classes.ConfigurationFile? configurationFile = DiGi.YOLO.Create.ConfigurationFile(path_Configuration);
+                if (configurationFile is null || string.IsNullOrWhiteSpace(configurationFile.GetDirectoryNames(DiGi.YOLO.Enums.Category.Validate)))
+                {
+                    return true;
+                }
+
+                string? directory_Validate = configurationFile.GetDirectory(DiGi.YOLO.Enums.Category.Validate);
+                if (string.IsNullOrWhiteSpace(directory_Validate) || !Directory.Exists(directory_Validate) || !Directory.EnumerateFileSystemEntries(directory_Validate, "*.jpeg").Any())
+                {
+                    string seed = yOLOTrainingDatasetOptions!.Seed.ToString(CultureInfo.InvariantCulture);
+                    string weight = yOLOTrainingDatasetOptions!.ValidateWeight.ToString(CultureInfo.InvariantCulture);
+                    int? minimum = MinimumNonTestBuildings(yOLOTrainingDatasetOptions!.Seed, yOLOTrainingDatasetOptions!.ValidateWeight);
+                    string remedy = minimum is null
+                        ? string.Format(CultureInfo.InvariantCulture, "no number of buildings produces one at ValidateWeight {0}", weight)
+                        : string.Format(CultureInfo.InvariantCulture, "the dataset needs at least {0} non-Test building(s)", minimum.Value.ToString(CultureInfo.InvariantCulture));
+
+                    Fail(nameof(DiGi.YOLO.Enums.Category.Validate), string.Format(CultureInfo.InvariantCulture, "The Validate split of {0} is empty (0 images) - ultralytics needs a validation set to train. Add counties: with Seed {1} and ValidateWeight {2}, {3}.", path_Configuration, seed, weight, remedy));
+                    return false;
+                }
+
+                return true;
+            }
+
+            // The first draw of a fresh Random(seed) below weight is the first Validate building, so its number is the
+            // minimum of non-Test buildings a dataset needs for a non-empty Validate split. A scan cap keeps a weight
+            // that never draws one from looping; at the defaults the answer is found at the 16th draw.
+            int? MinimumNonTestBuildings(int seed, double validateWeight)
+            {
+                if (validateWeight <= 0)
+                {
+                    return null;
+                }
+
+                Random random = new(seed);
+                for (int count = 1; count <= 10000; count++)
+                {
+                    if (random.NextDouble() < validateWeight)
+                    {
+                        return count;
+                    }
+                }
+
+                return null;
+            }
+
             bool train = yOLOTrainingSteps.Contains(YOLOTrainingStep.Train);
             bool validate = yOLOTrainingSteps.Contains(YOLOTrainingStep.Validate);
 
@@ -275,6 +328,13 @@ namespace DiGi.GIS.YOLO.UI
                 }
             }
 
+            // The Validate split is checked here, before the interpreter is probed, for a run that trains on the
+            // dataset as it stands: a run that still builds it (the Dataset step) is checked once the dataset is final.
+            if (train && !resumeTraining && !yOLOTrainingSteps.Contains(YOLOTrainingStep.Dataset) && !ValidateSplitOk())
+            {
+                return Result();
+            }
+
             if (failedStepNames.Count != 0)
             {
                 return Result();
@@ -362,7 +422,11 @@ namespace DiGi.GIS.YOLO.UI
                     }
 
                     messages.AddRange(yOLOTrainingDatasetResult.Messages ?? []);
-                    Report(string.Format(CultureInfo.InvariantCulture, "Dataset {0}: {1} image(s)", yOLOTrainingDatasetResult.OutputDirectory, yOLOTrainingDatasetResult.Total?.ImageCount ?? 0));
+                    Report(string.Format(CultureInfo.InvariantCulture, "Dataset {0}: {1} image(s), {2} Train / {3} Validate / {4} Test building(s)", yOLOTrainingDatasetResult.OutputDirectory, yOLOTrainingDatasetResult.Total?.ImageCount ?? 0, yOLOTrainingDatasetResult.Total?.TrainCount ?? 0, yOLOTrainingDatasetResult.Total?.ValidateCount ?? 0, yOLOTrainingDatasetResult.Total?.TestCount ?? 0));
+                    if ((yOLOTrainingDatasetResult.Total?.ValidateCount ?? 0) == 0)
+                    {
+                        Report("The Validate split is empty (0 buildings) - the Train step will refuse it.");
+                    }
 
                     if (yOLOTrainingDatasetResult.Cancelled || Stopped())
                     {
@@ -374,6 +438,13 @@ namespace DiGi.GIS.YOLO.UI
                     {
                         failedStepNames.AddRange(failedStepNames_Dataset.Where(x => !failedStepNames.Contains(x)));
                         Fail(Query.YOLOTrainingStepName(YOLOTrainingStep.Dataset), "The dataset step reported a failure.");
+                        return Result();
+                    }
+
+                    // The dataset is final now, so a run that trains on it is checked here, before the label check
+                    // starts the interpreter. A Train-only run was checked in the preflight instead.
+                    if (train && !resumeTraining && !ValidateSplitOk())
+                    {
                         return Result();
                     }
                 }

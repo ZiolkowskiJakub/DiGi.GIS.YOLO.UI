@@ -8,7 +8,7 @@ namespace DiGi.GIS.YOLO.UI
     {
         /// <summary>
         /// Maps the outcome of a <c>--train</c> run to the exit code of the console application.
-        /// <para>A cancellation is <see cref="YearBuiltPredictionExitCode.Cancelled"/> whatever else was listed. Otherwise an option that cannot be used is a <see cref="YearBuiltPredictionExitCode.Configuration"/>, a machine that cannot run the detector an <see cref="YearBuiltPredictionExitCode.Environment"/>, the training and the validation have codes of their own, and any other failed step is <see cref="YearBuiltPredictionExitCode.Failed"/>. The earlier reading of the same step wins, so a run refused before its first step keeps the code of what was wrong with the options.</para>
+        /// <para>A cancellation is <see cref="YearBuiltPredictionExitCode.Cancelled"/> whatever else was listed. Otherwise an option that cannot be used is a <see cref="YearBuiltPredictionExitCode.Configuration"/>, a machine that cannot run the detector an <see cref="YearBuiltPredictionExitCode.Environment"/>, the training and the validation have codes of their own, and any other failed step is <see cref="YearBuiltPredictionExitCode.Failed"/>. A dataset split named in a failure - <c>Train</c>, <c>Validate</c> or <c>Test</c> - is a dataset problem, not a failed step, and keeps the <see cref="YearBuiltPredictionExitCode.Configuration"/> code. The earlier reading of the same step wins, so a run refused before its first step keeps the code of what was wrong with the options.</para>
         /// </summary>
         /// <param name="yOLOTrainingRunResult">The result of the run.</param>
         /// <returns>The exit code. <see cref="YearBuiltPredictionExitCode.Failed"/> when there is no result.</returns>
@@ -47,6 +47,7 @@ namespace DiGi.GIS.YOLO.UI
                 nameof(DiGi.YOLO.Modify.Read),
                 nameof(Classes.YOLOTrainingDatasetOptions.WeightsPaths),
                 nameof(DiGi.YOLO.Enums.Category.Train),
+                nameof(DiGi.YOLO.Enums.Category.Validate),
                 nameof(DiGi.YOLO.Enums.Category.Test)
             ];
 
