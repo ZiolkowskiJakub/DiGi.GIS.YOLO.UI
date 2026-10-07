@@ -498,12 +498,12 @@ namespace DiGi.GIS.YOLO.UI
 
                         // A refusal before a process started ends at exit code -1, and so do a cancellation and a stall;
                         // only a real crash leaves the interpreter's positive code. That is what makes a stall or a crash
-                        // resumable and a refusal not, without reading messages.
+                        // resumable and a refusal not, without reading messages. The checkpoint is read for every stall or
+                        // crash, not only while resumes remain, so the attempt that ends the run is named with its epoch too.
                         YOLOCheckpointInformation? yOLOCheckpointInformation = null;
                         if (
                             !cancelled
                             && (stalled || exitCode > 0)
-                            && autoResumes.Count < yOLOTrainingRunOptions.AutoResumeCount
                             && path_LastWeights is not null
                             && File.Exists(path_LastWeights))
                         {
@@ -513,6 +513,41 @@ namespace DiGi.GIS.YOLO.UI
                         if (yOLOCheckpointInformation is null || yOLOCheckpointInformation.Finished)
                         {
                             Fail(Query.YOLOTrainingStepName(YOLOTrainingStep.Train), string.Format(CultureInfo.InvariantCulture, "The training did not produce weights (exit code {0}). {1}", yOLOTrainingResult?.ExitCode.ToString(CultureInfo.InvariantCulture) ?? "none", string.Join(" ", (yOLOTrainingResult?.StandardError ?? []).TakeLast(3))));
+                            return Result();
+                        }
+
+                        // The epoch the attempt was in when it stopped: the checkpoint holds the last completed one.
+                        int epoch = (yOLOCheckpointInformation.Epoch ?? 0) + 1;
+                        string cause = stalled
+                            ? string.Format(CultureInfo.InvariantCulture, "Training stalled at epoch {0}{1}", epoch, StalledLastOutput(yOLOTrainingResult?.StandardError))
+                            : string.Format(CultureInfo.InvariantCulture, "Training exited with code {0} at epoch {1}", exitCode, epoch);
+
+                        // A resumed attempt replaces this one's result, and a failed run ends here, so its error output is
+                        // reported now or never: a crash leaves no other record of why it exited (no traceback reaches the
+                        // operating system's logs). A process ended from outside writes none, which is said rather than
+                        // shown as an empty list.
+                        if (!stalled)
+                        {
+                            List<string> standardError_Crash = [.. (yOLOTrainingResult?.StandardError ?? []).Where(x => !string.IsNullOrWhiteSpace(x)).TakeLast(Constants.Count.CrashErrorOutputLines)];
+                            if (standardError_Crash.Count == 0)
+                            {
+                                Report(string.Format(CultureInfo.InvariantCulture, "The attempt that exited with code {0} wrote no error output - it was ended from outside, or exited without a message.", exitCode));
+                            }
+                            else
+                            {
+                                Report(string.Format(CultureInfo.InvariantCulture, "Error output of the attempt that exited with code {0} (last {1} line(s)):", exitCode, standardError_Crash.Count));
+                                foreach (string value in standardError_Crash)
+                                {
+                                    Report("  | " + value.TrimEnd());
+                                }
+                            }
+                        }
+
+                        if (autoResumes.Count >= yOLOTrainingRunOptions.AutoResumeCount)
+                        {
+                            Fail(Query.YOLOTrainingStepName(YOLOTrainingStep.Train), yOLOTrainingRunOptions.AutoResumeCount == 0
+                                ? string.Format(CultureInfo.InvariantCulture, "{0} - automatic resume is off (AutoResumeCount 0)", cause)
+                                : string.Format(CultureInfo.InvariantCulture, "{0} - no automatic resume left ({1} of {1} used)", cause, yOLOTrainingRunOptions.AutoResumeCount));
                             return Result();
                         }
 
@@ -529,24 +564,7 @@ namespace DiGi.GIS.YOLO.UI
                             return Result();
                         }
 
-                        int epoch = (yOLOCheckpointInformation.Epoch ?? 0) + 1;
-                        string line = stalled
-                            ? string.Format(CultureInfo.InvariantCulture, "Training stalled at epoch {0}{1} - automatic resume {2} of {3}", epoch, StalledLastOutput(yOLOTrainingResult?.StandardError), resumeNumber, yOLOTrainingRunOptions.AutoResumeCount)
-                            : string.Format(CultureInfo.InvariantCulture, "Training exited with code {0} at epoch {1} - automatic resume {2} of {3}", exitCode, epoch, resumeNumber, yOLOTrainingRunOptions.AutoResumeCount);
-
-                        // The resumed attempt replaces this one's result, so its error output is reported now or never:
-                        // a crash leaves no other record of why it exited (no traceback reaches the operating system's logs).
-                        if (!stalled)
-                        {
-                            List<string> standardError_Crash = [.. (yOLOTrainingResult?.StandardError ?? []).Where(x => !string.IsNullOrWhiteSpace(x)).TakeLast(Constants.Count.CrashErrorOutputLines)];
-                            Report(string.Format(CultureInfo.InvariantCulture, "Error output of the attempt that exited with code {0} (last {1} line(s)):", exitCode, standardError_Crash.Count));
-                            foreach (string value in standardError_Crash)
-                            {
-                                Report("  | " + value.TrimEnd());
-                            }
-                        }
-
-                        Report(line);
+                        Report(string.Format(CultureInfo.InvariantCulture, "{0} - automatic resume {1} of {2}", cause, resumeNumber, yOLOTrainingRunOptions.AutoResumeCount));
 
                         autoResumes.Add(new YOLOTrainingAutoResume(stalled ? "Stalled" : string.Format(CultureInfo.InvariantCulture, "Exited with code {0}", exitCode), yOLOCheckpointInformation.Epoch, DateTimeOffset.Now, backupFileName));
 

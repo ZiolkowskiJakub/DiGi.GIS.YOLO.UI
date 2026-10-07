@@ -562,7 +562,9 @@ namespace DiGi.GIS.YOLO.UI.ConsoleApp
                 if (result.AutoResumes.Count != 0)
                 {
                     Console.ForegroundColor = ConsoleColor.Yellow;
-                    Console.WriteLine($"[NOTE] Resumed automatically {result.AutoResumes.Count} time(s): {string.Join(", ", result.AutoResumes.Select(x => string.Format(System.Globalization.CultureInfo.InvariantCulture, "epoch {0}, {1} at {2:HH:mm:ss}", x.Epoch ?? 0, x.Reason, x.Time)))}");
+                    // AutoResume.Epoch is the last epoch the checkpoint completed; the summary names the epoch each
+                    // attempt was interrupted in, the same number the live "... at epoch E - automatic resume" lines carry.
+                    Console.WriteLine($"[NOTE] Resumed automatically {result.AutoResumes.Count} time(s): {string.Join(", ", result.AutoResumes.Select(x => string.Format(System.Globalization.CultureInfo.InvariantCulture, "{0} at epoch {1} ({2:HH:mm:ss})", x.Reason, x.Epoch is int epoch_Completed ? (epoch_Completed + 1).ToString(System.Globalization.CultureInfo.InvariantCulture) : "?", x.Time)))}");
                     Console.ResetColor();
                 }
 
