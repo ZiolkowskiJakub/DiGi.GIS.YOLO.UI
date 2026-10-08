@@ -1227,7 +1227,7 @@ Each named county row mapped to the polygon parts of its county, ordered ascendi
 
 Reads every stored year built datum of the named references, grouped by reference\.
 
-<b>All</b> rows of a reference are kept, in the order the read returned them. One reference can carry several stored rows - one per user among them - and a rule that looks at the history, such as the `train8` Legacy rule, has to see every one; a caller that wants a single datum takes the first, as [YearBuiltDatasAsync\(this GISWebAPIManager, int, IDictionary&lt;string,short&gt;, DateTimeOffset, bool, int, PostOptions, CancellationToken\)](DiGi.GIS.YOLO.UI.md#DiGi.GIS.YOLO.UI.Query.YearBuiltDatasAsync(thisDiGi.GIS.WebAPI.Classes.GISWebAPIManager,int,System.Collections.Generic.IDictionary_string,short_,System.DateTimeOffset,bool,int,DiGi.WebAPI.Classes.PostOptions,System.Threading.CancellationToken) 'DiGi\.GIS\.YOLO\.UI\.Query\.YearBuiltDatasAsync\(this DiGi\.GIS\.WebAPI\.Classes\.GISWebAPIManager, int, System\.Collections\.Generic\.IDictionary\<string,short\>, System\.DateTimeOffset, bool, int, DiGi\.WebAPI\.Classes\.PostOptions, System\.Threading\.CancellationToken\)') does.
+<b>All</b> rows of a reference are kept, in the order the read returned them. One reference can carry several stored rows - one per user among them - and a rule that looks at the history, such as the `train8` Legacy rule, has to see every one; a caller that wants a single datum takes the first, as [YearBuiltDatasAsync\(this GISWebAPIManager, int, IDictionary&lt;string,short&gt;, DateTimeOffset, string, bool, int, PostOptions, CancellationToken\)](DiGi.GIS.YOLO.UI.md#DiGi.GIS.YOLO.UI.Query.YearBuiltDatasAsync(thisDiGi.GIS.WebAPI.Classes.GISWebAPIManager,int,System.Collections.Generic.IDictionary_string,short_,System.DateTimeOffset,string,bool,int,DiGi.WebAPI.Classes.PostOptions,System.Threading.CancellationToken) 'DiGi\.GIS\.YOLO\.UI\.Query\.YearBuiltDatasAsync\(this DiGi\.GIS\.WebAPI\.Classes\.GISWebAPIManager, int, System\.Collections\.Generic\.IDictionary\<string,short\>, System\.DateTimeOffset, string, bool, int, DiGi\.WebAPI\.Classes\.PostOptions, System\.Threading\.CancellationToken\)') does.
 
 The read is bulk and paged at [referenceBatchSize](DiGi.GIS.YOLO.UI.md#DiGi.GIS.YOLO.UI.Query.StoredYearBuiltDatasAsync(thisDiGi.GIS.WebAPI.Classes.GISWebAPIManager,int,System.Collections.Generic.IEnumerable_string_,int,System.Collections.Generic.ICollection_string_,DiGi.WebAPI.Classes.PostOptions,System.Threading.CancellationToken).referenceBatchSize 'DiGi\.GIS\.YOLO\.UI\.Query\.StoredYearBuiltDatasAsync\(this DiGi\.GIS\.WebAPI\.Classes\.GISWebAPIManager, int, System\.Collections\.Generic\.IEnumerable\<string\>, int, System\.Collections\.Generic\.ICollection\<string\>, DiGi\.WebAPI\.Classes\.PostOptions, System\.Threading\.CancellationToken\)\.referenceBatchSize'), at most [YearBuiltDataReference\_Maximum](DiGi.GIS.YOLO.UI.Constants.md#DiGi.GIS.YOLO.UI.Constants.Count.YearBuiltDataReference_Maximum 'DiGi\.GIS\.YOLO\.UI\.Constants\.Count\.YearBuiltDataReference\_Maximum') - the endpoint's cap. `fallbackbyreference=true` is sent explicitly, because the endpoint defaults it off and without it a row filed under a sibling polygon part of the county is not returned. The request body is passed as a factory, so a retry of a page rebuilds it rather than resending a drained stream.
 
@@ -1403,9 +1403,9 @@ The [System\.Threading\.CancellationToken](https://learn.microsoft.com/en-us/dot
 [System\.Threading\.Tasks\.Task&lt;](https://learn.microsoft.com/en-us/dotnet/api/system.threading.tasks.task-1 'System\.Threading\.Tasks\.Task\`1')[System\.Collections\.Generic\.Dictionary&lt;](https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.dictionary-2 'System\.Collections\.Generic\.Dictionary\`2')[System\.String](https://learn.microsoft.com/en-us/dotnet/api/system.string 'System\.String')[,](https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.dictionary-2 'System\.Collections\.Generic\.Dictionary\`2')[System\.Int16](https://learn.microsoft.com/en-us/dotnet/api/system.int16 'System\.Int16')[&gt;](https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.dictionary-2 'System\.Collections\.Generic\.Dictionary\`2')[&gt;](https://learn.microsoft.com/en-us/dotnet/api/system.threading.tasks.task-1 'System\.Threading\.Tasks\.Task\`1')  
 A task returning the label year by reference \- an unlabelled building is absent \- or null when any page could not be read\.
 
-<a name='DiGi.GIS.YOLO.UI.Query.YearBuiltDatasAsync(thisDiGi.GIS.WebAPI.Classes.GISWebAPIManager,int,System.Collections.Generic.IDictionary_string,short_,System.DateTimeOffset,bool,int,DiGi.WebAPI.Classes.PostOptions,System.Threading.CancellationToken)'></a>
+<a name='DiGi.GIS.YOLO.UI.Query.YearBuiltDatasAsync(thisDiGi.GIS.WebAPI.Classes.GISWebAPIManager,int,System.Collections.Generic.IDictionary_string,short_,System.DateTimeOffset,string,bool,int,DiGi.WebAPI.Classes.PostOptions,System.Threading.CancellationToken)'></a>
 
-## Query\.YearBuiltDatasAsync\(this GISWebAPIManager, int, IDictionary\<string,short\>, DateTimeOffset, bool, int, PostOptions, CancellationToken\) Method
+## Query\.YearBuiltDatasAsync\(this GISWebAPIManager, int, IDictionary\<string,short\>, DateTimeOffset, string, bool, int, PostOptions, CancellationToken\) Method
 
 Reads each building's stored year built data and adds the run's predicted construction year to it\.
 
@@ -1418,53 +1418,59 @@ Every prediction of one run carries the same stamp. The stored entries are keyed
 The read is bulk: the endpoint answers up to [YearBuiltDataReference\_Maximum](DiGi.GIS.YOLO.UI.Constants.md#DiGi.GIS.YOLO.UI.Constants.Count.YearBuiltDataReference_Maximum 'DiGi\.GIS\.YOLO\.UI\.Constants\.Count\.YearBuiltDataReference\_Maximum') references in one request, so the references are paged at that size and a page is the unit that succeeds or fails. A page that cannot be read is skipped rather than answered with a fresh datum for every building of it, because that would store a second row alongside the one that could not be read.
 
 ```csharp
-public static System.Threading.Tasks.Task<System.Collections.Generic.List<DiGi.GIS.Classes.YearBuiltData>> YearBuiltDatasAsync(this DiGi.GIS.WebAPI.Classes.GISWebAPIManager? gisWebAPIManager, int countyId, System.Collections.Generic.IDictionary<string,short>? years, System.DateTimeOffset runTimestamp, bool readStored=true, int referenceBatchSize=10000, DiGi.WebAPI.Classes.PostOptions? postOptions=null, System.Threading.CancellationToken cancellationToken=default(System.Threading.CancellationToken));
+public static System.Threading.Tasks.Task<System.Collections.Generic.List<DiGi.GIS.Classes.YearBuiltData>> YearBuiltDatasAsync(this DiGi.GIS.WebAPI.Classes.GISWebAPIManager? gisWebAPIManager, int countyId, System.Collections.Generic.IDictionary<string,short>? years, System.DateTimeOffset runTimestamp, string? modelId, bool readStored=true, int referenceBatchSize=10000, DiGi.WebAPI.Classes.PostOptions? postOptions=null, System.Threading.CancellationToken cancellationToken=default(System.Threading.CancellationToken));
 ```
 #### Parameters
 
-<a name='DiGi.GIS.YOLO.UI.Query.YearBuiltDatasAsync(thisDiGi.GIS.WebAPI.Classes.GISWebAPIManager,int,System.Collections.Generic.IDictionary_string,short_,System.DateTimeOffset,bool,int,DiGi.WebAPI.Classes.PostOptions,System.Threading.CancellationToken).gisWebAPIManager'></a>
+<a name='DiGi.GIS.YOLO.UI.Query.YearBuiltDatasAsync(thisDiGi.GIS.WebAPI.Classes.GISWebAPIManager,int,System.Collections.Generic.IDictionary_string,short_,System.DateTimeOffset,string,bool,int,DiGi.WebAPI.Classes.PostOptions,System.Threading.CancellationToken).gisWebAPIManager'></a>
 
 `gisWebAPIManager` [DiGi\.GIS\.WebAPI\.Classes\.GISWebAPIManager](https://learn.microsoft.com/en-us/dotnet/api/digi.gis.webapi.classes.giswebapimanager 'DiGi\.GIS\.WebAPI\.Classes\.GISWebAPIManager')
 
 The [DiGi\.GIS\.WebAPI\.Classes\.GISWebAPIManager](https://learn.microsoft.com/en-us/dotnet/api/digi.gis.webapi.classes.giswebapimanager 'DiGi\.GIS\.WebAPI\.Classes\.GISWebAPIManager') instance used to communicate with the WebAPI\.
 
-<a name='DiGi.GIS.YOLO.UI.Query.YearBuiltDatasAsync(thisDiGi.GIS.WebAPI.Classes.GISWebAPIManager,int,System.Collections.Generic.IDictionary_string,short_,System.DateTimeOffset,bool,int,DiGi.WebAPI.Classes.PostOptions,System.Threading.CancellationToken).countyId'></a>
+<a name='DiGi.GIS.YOLO.UI.Query.YearBuiltDatasAsync(thisDiGi.GIS.WebAPI.Classes.GISWebAPIManager,int,System.Collections.Generic.IDictionary_string,short_,System.DateTimeOffset,string,bool,int,DiGi.WebAPI.Classes.PostOptions,System.Threading.CancellationToken).countyId'></a>
 
 `countyId` [System\.Int32](https://learn.microsoft.com/en-us/dotnet/api/system.int32 'System\.Int32')
 
 The identifier of the county row the references belong to\.
 
-<a name='DiGi.GIS.YOLO.UI.Query.YearBuiltDatasAsync(thisDiGi.GIS.WebAPI.Classes.GISWebAPIManager,int,System.Collections.Generic.IDictionary_string,short_,System.DateTimeOffset,bool,int,DiGi.WebAPI.Classes.PostOptions,System.Threading.CancellationToken).years'></a>
+<a name='DiGi.GIS.YOLO.UI.Query.YearBuiltDatasAsync(thisDiGi.GIS.WebAPI.Classes.GISWebAPIManager,int,System.Collections.Generic.IDictionary_string,short_,System.DateTimeOffset,string,bool,int,DiGi.WebAPI.Classes.PostOptions,System.Threading.CancellationToken).years'></a>
 
 `years` [System\.Collections\.Generic\.IDictionary&lt;](https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.idictionary-2 'System\.Collections\.Generic\.IDictionary\`2')[System\.String](https://learn.microsoft.com/en-us/dotnet/api/system.string 'System\.String')[,](https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.idictionary-2 'System\.Collections\.Generic\.IDictionary\`2')[System\.Int16](https://learn.microsoft.com/en-us/dotnet/api/system.int16 'System\.Int16')[&gt;](https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.idictionary-2 'System\.Collections\.Generic\.IDictionary\`2')
 
 The predicted construction year of each building, by reference\.
 
-<a name='DiGi.GIS.YOLO.UI.Query.YearBuiltDatasAsync(thisDiGi.GIS.WebAPI.Classes.GISWebAPIManager,int,System.Collections.Generic.IDictionary_string,short_,System.DateTimeOffset,bool,int,DiGi.WebAPI.Classes.PostOptions,System.Threading.CancellationToken).runTimestamp'></a>
+<a name='DiGi.GIS.YOLO.UI.Query.YearBuiltDatasAsync(thisDiGi.GIS.WebAPI.Classes.GISWebAPIManager,int,System.Collections.Generic.IDictionary_string,short_,System.DateTimeOffset,string,bool,int,DiGi.WebAPI.Classes.PostOptions,System.Threading.CancellationToken).runTimestamp'></a>
 
 `runTimestamp` [System\.DateTimeOffset](https://learn.microsoft.com/en-us/dotnet/api/system.datetimeoffset 'System\.DateTimeOffset')
 
 The stamp every prediction of this run carries\.
 
-<a name='DiGi.GIS.YOLO.UI.Query.YearBuiltDatasAsync(thisDiGi.GIS.WebAPI.Classes.GISWebAPIManager,int,System.Collections.Generic.IDictionary_string,short_,System.DateTimeOffset,bool,int,DiGi.WebAPI.Classes.PostOptions,System.Threading.CancellationToken).readStored'></a>
+<a name='DiGi.GIS.YOLO.UI.Query.YearBuiltDatasAsync(thisDiGi.GIS.WebAPI.Classes.GISWebAPIManager,int,System.Collections.Generic.IDictionary_string,short_,System.DateTimeOffset,string,bool,int,DiGi.WebAPI.Classes.PostOptions,System.Threading.CancellationToken).modelId'></a>
+
+`modelId` [System\.String](https://learn.microsoft.com/en-us/dotnet/api/system.string 'System\.String')
+
+The identity of the regressor that produced the years \- the SHA\-256 of its model file \- stamped on every prediction as [DiGi\.GIS\.Classes\.PredictedYearBuilt\.ModelId](https://learn.microsoft.com/en-us/dotnet/api/digi.gis.classes.predictedyearbuilt.modelid 'DiGi\.GIS\.Classes\.PredictedYearBuilt\.ModelId'), or null when it is not known\.
+
+<a name='DiGi.GIS.YOLO.UI.Query.YearBuiltDatasAsync(thisDiGi.GIS.WebAPI.Classes.GISWebAPIManager,int,System.Collections.Generic.IDictionary_string,short_,System.DateTimeOffset,string,bool,int,DiGi.WebAPI.Classes.PostOptions,System.Threading.CancellationToken).readStored'></a>
 
 `readStored` [System\.Boolean](https://learn.microsoft.com/en-us/dotnet/api/system.boolean 'System\.Boolean')
 
 When true, each building's stored entry is read back first so the prediction is added to its history\. Set it false only when the caller is not storing the year built data at all \- a county is tens of thousands of buildings, and the building data column is derived from the latest prediction, which a fresh entry already carries\.
 
-<a name='DiGi.GIS.YOLO.UI.Query.YearBuiltDatasAsync(thisDiGi.GIS.WebAPI.Classes.GISWebAPIManager,int,System.Collections.Generic.IDictionary_string,short_,System.DateTimeOffset,bool,int,DiGi.WebAPI.Classes.PostOptions,System.Threading.CancellationToken).referenceBatchSize'></a>
+<a name='DiGi.GIS.YOLO.UI.Query.YearBuiltDatasAsync(thisDiGi.GIS.WebAPI.Classes.GISWebAPIManager,int,System.Collections.Generic.IDictionary_string,short_,System.DateTimeOffset,string,bool,int,DiGi.WebAPI.Classes.PostOptions,System.Threading.CancellationToken).referenceBatchSize'></a>
 
 `referenceBatchSize` [System\.Int32](https://learn.microsoft.com/en-us/dotnet/api/system.int32 'System\.Int32')
 
 The number of references read in one request, at most [YearBuiltDataReference\_Maximum](DiGi.GIS.YOLO.UI.Constants.md#DiGi.GIS.YOLO.UI.Constants.Count.YearBuiltDataReference_Maximum 'DiGi\.GIS\.YOLO\.UI\.Constants\.Count\.YearBuiltDataReference\_Maximum') \- the endpoint's cap\.
 
-<a name='DiGi.GIS.YOLO.UI.Query.YearBuiltDatasAsync(thisDiGi.GIS.WebAPI.Classes.GISWebAPIManager,int,System.Collections.Generic.IDictionary_string,short_,System.DateTimeOffset,bool,int,DiGi.WebAPI.Classes.PostOptions,System.Threading.CancellationToken).postOptions'></a>
+<a name='DiGi.GIS.YOLO.UI.Query.YearBuiltDatasAsync(thisDiGi.GIS.WebAPI.Classes.GISWebAPIManager,int,System.Collections.Generic.IDictionary_string,short_,System.DateTimeOffset,string,bool,int,DiGi.WebAPI.Classes.PostOptions,System.Threading.CancellationToken).postOptions'></a>
 
 `postOptions` [DiGi\.WebAPI\.Classes\.PostOptions](https://learn.microsoft.com/en-us/dotnet/api/digi.webapi.classes.postoptions 'DiGi\.WebAPI\.Classes\.PostOptions')
 
 Optional configuration options for the requests\.
 
-<a name='DiGi.GIS.YOLO.UI.Query.YearBuiltDatasAsync(thisDiGi.GIS.WebAPI.Classes.GISWebAPIManager,int,System.Collections.Generic.IDictionary_string,short_,System.DateTimeOffset,bool,int,DiGi.WebAPI.Classes.PostOptions,System.Threading.CancellationToken).cancellationToken'></a>
+<a name='DiGi.GIS.YOLO.UI.Query.YearBuiltDatasAsync(thisDiGi.GIS.WebAPI.Classes.GISWebAPIManager,int,System.Collections.Generic.IDictionary_string,short_,System.DateTimeOffset,string,bool,int,DiGi.WebAPI.Classes.PostOptions,System.Threading.CancellationToken).cancellationToken'></a>
 
 `cancellationToken` [System\.Threading\.CancellationToken](https://learn.microsoft.com/en-us/dotnet/api/system.threading.cancellationtoken 'System\.Threading\.CancellationToken')
 

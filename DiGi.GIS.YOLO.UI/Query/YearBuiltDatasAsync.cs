@@ -21,6 +21,7 @@ namespace DiGi.GIS.YOLO.UI
         /// <param name="countyId">The identifier of the county row the references belong to.</param>
         /// <param name="years">The predicted construction year of each building, by reference.</param>
         /// <param name="runTimestamp">The stamp every prediction of this run carries.</param>
+        /// <param name="modelId">The identity of the regressor that produced the years - the SHA-256 of its model file - stamped on every prediction as <see cref="PredictedYearBuilt.ModelId"/>, or null when it is not known.</param>
         /// <param name="readStored">When true, each building&apos;s stored entry is read back first so the prediction is added to its history. Set it false only when the caller is not storing the year built data at all - a county is tens of thousands of buildings, and the building data column is derived from the latest prediction, which a fresh entry already carries.</param>
         /// <param name="referenceBatchSize">The number of references read in one request, at most <see cref="Constants.Count.YearBuiltDataReference_Maximum"/> - the endpoint&apos;s cap.</param>
         /// <param name="postOptions">Optional configuration options for the requests.</param>
@@ -31,6 +32,7 @@ namespace DiGi.GIS.YOLO.UI
             int countyId,
             IDictionary<string, short>? years,
             DateTimeOffset runTimestamp,
+            string? modelId,
             bool readStored = true,
             int referenceBatchSize = Constants.Count.YearBuiltDataReference_Maximum,
             PostOptions? postOptions = null,
@@ -75,7 +77,7 @@ namespace DiGi.GIS.YOLO.UI
                         ? yearBuiltDatas_Stored[0]
                         : new YearBuiltData(reference);
 
-                    if (yearBuiltData.SetPredictedYearBuilt(dateTime, years[reference]))
+                    if (yearBuiltData.SetPredictedYearBuilt(dateTime, years[reference], modelId))
                     {
                         result.Add(yearBuiltData);
                     }
@@ -88,7 +90,7 @@ namespace DiGi.GIS.YOLO.UI
                 foreach (string reference in references)
                 {
                     YearBuiltData yearBuiltData = new(reference);
-                    if (yearBuiltData.SetPredictedYearBuilt(dateTime, years[reference]))
+                    if (yearBuiltData.SetPredictedYearBuilt(dateTime, years[reference], modelId))
                     {
                         result.Add(yearBuiltData);
                     }

@@ -260,6 +260,12 @@ namespace DiGi.GIS.YOLO.UI
             // FileNotFoundException for the life of the process, so every county behind it fails the same way.
             // Gated on a non-null predictor: the seam is optional by design, and a missing predictor stays the
             // per-county step failure it is.
+            // The identity of the regressor, stamped on every prediction this run stores (ZiolkowskiJakub/DiGi.GIS.YOLO.UI#26):
+            // the stored entry otherwise carries only the run stamp, and after a model swap the history could not tell one
+            // model's predictions from another's. Null when the predictor states none - stubs and third-party predictors
+            // keep storing as before.
+            string? modelId_Regressor = null;
+
             if (yearBuiltPredictionPipelineOptions.Score && yearBuiltPredictor is not null)
             {
                 DiGi.GIS.IO.Classes.YearBuiltPredictorReadiness yearBuiltPredictorReadiness = yearBuiltPredictor.YearBuiltPredictorReadiness();
@@ -271,6 +277,18 @@ namespace DiGi.GIS.YOLO.UI
                     Serilog.Modify.Log(Serilog.Enums.LogEventLevel.Error, "{Method}: this machine cannot score the buildings - {Messages}", nameof(RunYearBuiltPredictionsAsync), string.Join("; ", yearBuiltPredictorReadiness.Messages));
 
                     return Result();
+                }
+
+                modelId_Regressor = yearBuiltPredictorReadiness.ModelId;
+                if (modelId_Regressor is not null)
+                {
+                    messages.Add(string.Format(System.Globalization.CultureInfo.InvariantCulture, "Regressor SHA-256: {0}", modelId_Regressor));
+
+                    Serilog.Modify.Log("{Method}: regressor SHA-256 {RegressorSHA256} - stamped on every stored prediction", nameof(RunYearBuiltPredictionsAsync), modelId_Regressor);
+                }
+                else
+                {
+                    Serilog.Modify.Log(Serilog.Enums.LogEventLevel.Warning, "{Method}: the predictor states no model identity - stored predictions carry no ModelId", nameof(RunYearBuiltPredictionsAsync));
                 }
 
                 // The options decide which features reach the regressor, and nothing else checks that they agree with the
@@ -689,7 +707,7 @@ namespace DiGi.GIS.YOLO.UI
                         continue;
                     }
 
-                    List<YearBuiltData> yearBuiltDatas = await Query.YearBuiltDatasAsync(gisWebAPIManager, countyId, years_ByReference, runTimestamp, yearBuiltPredictionPipelineOptions.UpdateYearBuiltData, referenceBatchSize, postOptions_Bulk, cancellationToken);
+                    List<YearBuiltData> yearBuiltDatas = await Query.YearBuiltDatasAsync(gisWebAPIManager, countyId, years_ByReference, runTimestamp, modelId_Regressor, yearBuiltPredictionPipelineOptions.UpdateYearBuiltData, referenceBatchSize, postOptions_Bulk, cancellationToken);
 
                     // Every reference that is read yields exactly one datum, so a smaller result means at least
                     // one page was skipped and the buildings of it must not be written as if they had been read.
