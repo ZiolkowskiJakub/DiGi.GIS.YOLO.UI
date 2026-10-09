@@ -1450,7 +1450,7 @@ The stamp every prediction of this run carries\.
 
 `modelId` [System\.String](https://learn.microsoft.com/en-us/dotnet/api/system.string 'System\.String')
 
-The identity of the regressor that produced the years \- the SHA\-256 of its model file \- stamped on every prediction as [DiGi\.GIS\.Classes\.PredictedYearBuilt\.ModelId](https://learn.microsoft.com/en-us/dotnet/api/digi.gis.classes.predictedyearbuilt.modelid 'DiGi\.GIS\.Classes\.PredictedYearBuilt\.ModelId'), or null when it is not known\.
+The identity of the predictor that produced the years \- normally the SHA\-256 of its model file, or a rule name for a heuristic \- stamped on every prediction as [DiGi\.GIS\.Classes\.PredictedYearBuilt\.ModelId](https://learn.microsoft.com/en-us/dotnet/api/digi.gis.classes.predictedyearbuilt.modelid 'DiGi\.GIS\.Classes\.PredictedYearBuilt\.ModelId'), or null when it is not known \(ZiolkowskiJakub/DiGi\.GIS\.YOLO\.UI\#27\)\.
 
 <a name='DiGi.GIS.YOLO.UI.Query.YearBuiltDatasAsync(thisDiGi.GIS.WebAPI.Classes.GISWebAPIManager,int,System.Collections.Generic.IDictionary_string,short_,System.DateTimeOffset,string,bool,int,DiGi.WebAPI.Classes.PostOptions,System.Threading.CancellationToken).readStored'></a>
 

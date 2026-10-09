@@ -260,11 +260,20 @@ namespace DiGi.GIS.YOLO.UI
             // FileNotFoundException for the life of the process, so every county behind it fails the same way.
             // Gated on a non-null predictor: the seam is optional by design, and a missing predictor stays the
             // per-county step failure it is.
-            // The identity of the regressor, stamped on every prediction this run stores (ZiolkowskiJakub/DiGi.GIS.YOLO.UI#26):
+            // The identity of the predictor, stamped on every prediction this run stores (ZiolkowskiJakub/DiGi.GIS.YOLO.UI#26):
             // the stored entry otherwise carries only the run stamp, and after a model swap the history could not tell one
-            // model's predictions from another's. Null when the predictor states none - stubs and third-party predictors
-            // keep storing as before.
-            string? modelId_Regressor = null;
+            // predictor's predictions from another's. It is a SHA-256 only for a model file - a heuristic names its rule instead.
+            // Null when the predictor states none - stubs and third-party predictors keep storing as before.
+            string? modelId_Predictor = null;
+
+            // The feature groups a county must carry populated before it is scored. The predictor states its own when it
+            // can; a predictor that states none keeps the historical default - the detection and population groups the
+            // retired regressor read (ZiolkowskiJakub/DiGi.GIS.YOLO.UI#27).
+            HashSet<string> required_FeatureGroups =
+            [
+                DiGi.GIS.IO.Constants.YearBuiltPredictionFeatureGroup.Detection,
+                DiGi.GIS.IO.Constants.YearBuiltPredictionFeatureGroup.Population
+            ];
 
             if (yearBuiltPredictionPipelineOptions.Score && yearBuiltPredictor is not null)
             {
@@ -279,12 +288,20 @@ namespace DiGi.GIS.YOLO.UI
                     return Result();
                 }
 
-                modelId_Regressor = yearBuiltPredictorReadiness.ModelId;
-                if (modelId_Regressor is not null)
-                {
-                    messages.Add(string.Format(System.Globalization.CultureInfo.InvariantCulture, "Regressor SHA-256: {0}", modelId_Regressor));
+                modelId_Predictor = yearBuiltPredictorReadiness.ModelId;
 
-                    Serilog.Modify.Log("{Method}: regressor SHA-256 {RegressorSHA256} - stamped on every stored prediction", nameof(RunYearBuiltPredictionsAsync), modelId_Regressor);
+                // A predictor that states the feature groups it requires (the first-detection heuristic states only the
+                // detection group) narrows the guard to those; one that states none keeps the historical default above.
+                if (yearBuiltPredictorReadiness.RequiredFeatureGroups is not null)
+                {
+                    required_FeatureGroups = [.. yearBuiltPredictorReadiness.RequiredFeatureGroups];
+                }
+
+                if (modelId_Predictor is not null)
+                {
+                    messages.Add(string.Format(System.Globalization.CultureInfo.InvariantCulture, "Year built predictor: {0}", modelId_Predictor));
+
+                    Serilog.Modify.Log("{Method}: year built predictor {PredictorId} - stamped on every stored prediction", nameof(RunYearBuiltPredictionsAsync), modelId_Predictor);
                 }
                 else
                 {
@@ -621,7 +638,7 @@ namespace DiGi.GIS.YOLO.UI
                                     continue;
                                 }
 
-                                bool required = keyValuePair.Key == DiGi.GIS.IO.Constants.YearBuiltPredictionFeatureGroup.Detection || keyValuePair.Key == DiGi.GIS.IO.Constants.YearBuiltPredictionFeatureGroup.Population;
+                                bool required = required_FeatureGroups.Contains(keyValuePair.Key);
                                 if (required && names_Unpopulated.Count == keyValuePair.Value.Count)
                                 {
                                     string remedy = keyValuePair.Key == DiGi.GIS.IO.Constants.YearBuiltPredictionFeatureGroup.Detection
@@ -707,7 +724,7 @@ namespace DiGi.GIS.YOLO.UI
                         continue;
                     }
 
-                    List<YearBuiltData> yearBuiltDatas = await Query.YearBuiltDatasAsync(gisWebAPIManager, countyId, years_ByReference, runTimestamp, modelId_Regressor, yearBuiltPredictionPipelineOptions.UpdateYearBuiltData, referenceBatchSize, postOptions_Bulk, cancellationToken);
+                    List<YearBuiltData> yearBuiltDatas = await Query.YearBuiltDatasAsync(gisWebAPIManager, countyId, years_ByReference, runTimestamp, modelId_Predictor, yearBuiltPredictionPipelineOptions.UpdateYearBuiltData, referenceBatchSize, postOptions_Bulk, cancellationToken);
 
                     // Every reference that is read yields exactly one datum, so a smaller result means at least
                     // one page was skipped and the buildings of it must not be written as if they had been read.
