@@ -24,7 +24,7 @@ namespace DiGi.GIS.YOLO.UI
         /// <para>Six steps per county: export the imagery, score it with the frozen detector, turn the detections into objects, write them into the building data, read the feature columns back and score them into a construction year, and store that year twice - dated into the year built data, and latest into the building data column.</para>
         /// <para>Each step carries its own flag, so a run can be resumed without repeating the expensive ones, and the three write steps are off by default, so a first pass over a county reads and scores but stores nothing unless a write step is named on. Each step is idempotent: the scratch paths are derived from the county identifier, the detector overwrites its results file rather than appending to it, and a stored year built datum is read back and added to rather than replaced.</para>
         /// <para>Only a building the detector fired on at least once is scored. A building it never fired on carries no per-year confidence series, which is the feature the regressor was built around, so scoring it would be scoring a row of absent features. The consequence is that the run predicts a year for fewer buildings than the file based workflow it replaces, which scored every row of its table - worth knowing before comparing the two reference by reference.</para>
-        /// <para>The detection write is wider than the scoring: it covers every building whose imagery the detector was handed, and replaces each one's detection columns over <see cref="YearBuiltPredictionPipelineOptions.Years"/> as a whole. A building the current weights never fire on is therefore cleared rather than left carrying what earlier weights detected on it (ZiolkowskiJakub/DiGi.GIS.YOLO.UI#21).</para>
+        /// <para>The detection write is wider than the scoring: it covers every building whose imagery the detector was handed, and replaces each one's detection columns over <see cref="YearBuiltPredictionPipelineOptions.Years"/> as a whole. A building the current weights never fire on is therefore cleared rather than left carrying what earlier weights detected on it (ZiolkowskiJakub/DiGi.GIS.YOLO.UI#21). With the detection and the predicted year writes both on, the predicted year of such a building is cleared as well, since it was derived from the detection evidence that is now gone - a stored user year is never touched (ZiolkowskiJakub/DiGi.GIS.YOLO.UI#28).</para>
         /// <para><see cref="YearBuiltPredictionPipelineOptions.ReferencesFilePath"/> narrows every step to the buildings of a dataset manifest, and a manifest that does not read refuses the run before any county is touched (ZiolkowskiJakub/DiGi.GIS.YOLO.UI#22).</para>
         /// <para>The scope is checked before any of it starts. A county identifier that is in no county row - most often a four character county code passed where an identifier was wanted - matches no stored building, so every step reports a legitimate zero and the run ends green having done nothing at all. That is a mis-scoped run rather than an empty county, so it fails here instead.</para>
         /// <para>The options are checked against the model before any county is read. Narrowing them - asking for fewer years or radiuses than the model was trained on - drops features the model was fitted on, so every prediction silently degrades and it is refused. Widening them only adds features the model ignores, so it warns.</para>
@@ -78,6 +78,7 @@ namespace DiGi.GIS.YOLO.UI
 
             long buildingCount = 0;
             long buildingDataUpdatedCount = 0;
+            long predictedYearClearedCount = 0;
             long detectionCount = 0;
             long featureRowCount = 0;
             long imageCount = 0;
@@ -575,6 +576,59 @@ namespace DiGi.GIS.YOLO.UI
                         }
                     }
 
+                    // A building the current detector never fired on has just lost its detection columns, so the predicted
+                    // year derived from that evidence is stale and is cleared rather than kept. Only the predicted column
+                    // is cleared - a stored user year is never touched (ZiolkowskiJakub/DiGi.GIS.YOLO.UI#28).
+                    if (yearBuiltPredictionPipelineOptions.UpdateDetections && yearBuiltPredictionPipelineOptions.UpdatePredictedYearBuilt)
+                    {
+                        HashSet<string> references_Detected = new(StringComparer.Ordinal);
+                        foreach (Building2DYearBuiltPredictions building2DYearBuiltPredictions_Temp in building2DYearBuiltPredictions)
+                        {
+                            if (building2DYearBuiltPredictions_Temp?.Reference is string reference && !string.IsNullOrWhiteSpace(reference))
+                            {
+                                references_Detected.Add(reference);
+                            }
+                        }
+
+                        List<string> references_ToClear = [.. references_Scored.Where(x => !references_Detected.Contains(x))];
+
+                        if (references_ToClear.Count != 0)
+                        {
+                            long cleared_County = 0;
+
+                            for (int i = 0; i < references_ToClear.Count; i += batchSize)
+                            {
+                                if (cancellationToken.IsCancellationRequested)
+                                {
+                                    cancelled = true;
+                                    break;
+                                }
+
+                                List<string> references_ToClear_Batch = references_ToClear.GetRange(i, Math.Min(batchSize, references_ToClear.Count - i));
+
+                                Table table_ClearPredictedYearBuilt = new();
+                                DiGi.GIS.IO.Modify.Update_Building2D_PredictedYearBuilt(table_ClearPredictedYearBuilt, countyId, references_ToClear_Batch);
+
+                                if (table_ClearPredictedYearBuilt.RowCount != 0)
+                                {
+                                    bool updated = await WebAPI.Modify.UpdateItemsAsync(gisWebAPIManager, table_ClearPredictedYearBuilt, countyIds_County, postOptions_Bulk);
+                                    if (updated)
+                                    {
+                                        cleared_County += references_ToClear_Batch.Count;
+                                    }
+                                    else
+                                    {
+                                        Fail($"{nameof(WebAPI.Modify.UpdateItemsAsync)} ({PostgreSQL.Constants.TableName.BuildingData} predicted year clear)", countyId);
+                                    }
+                                }
+                            }
+
+                            predictedYearClearedCount += cleared_County;
+
+                            Serilog.Modify.Log("{Method}: county {CountyId} - {ClearedCount} never-detected building(s) had their predicted year built cleared", nameof(RunYearBuiltPredictionsAsync), countyId, cleared_County);
+                        }
+                    }
+
                     // Only a building the detector fired on is scored - see the summary.
                     if (!yearBuiltPredictionPipelineOptions.Score || building2DYearBuiltPredictions.Count == 0)
                     {
@@ -817,10 +871,15 @@ namespace DiGi.GIS.YOLO.UI
 
             cancelled = cancelled || cancellationToken.IsCancellationRequested;
 
+            if (predictedYearClearedCount != 0)
+            {
+                messages.Add(string.Format(System.Globalization.CultureInfo.InvariantCulture, "Cleared the predicted year built of {0} never-detected building(s)", predictedYearClearedCount));
+            }
+
             Serilog.Modify.Log(
                 cancelled || failedStepNames.Count != 0 ? Serilog.Enums.LogEventLevel.Warning : Serilog.Enums.LogEventLevel.Information,
-                "{Method} finished{Cancelled}: {ImageCount} images, {DetectionCount} detections over {BuildingCount} buildings, {FeatureRowCount} feature rows, {PredictionCount} predictions, {YearBuiltDataUpdatedCount} year built data written, {BuildingDataUpdatedCount} building data rows written, {FailedStepCount} steps stepped over",
-                nameof(RunYearBuiltPredictionsAsync), cancelled ? " after being cancelled" : string.Empty, imageCount, detectionCount, buildingCount, featureRowCount, predictionCount, yearBuiltDataUpdatedCount, buildingDataUpdatedCount, failedStepNames.Count);
+                "{Method} finished{Cancelled}: {ImageCount} images, {DetectionCount} detections over {BuildingCount} buildings, {FeatureRowCount} feature rows, {PredictionCount} predictions, {YearBuiltDataUpdatedCount} year built data written, {BuildingDataUpdatedCount} building data rows written, {PredictedYearClearedCount} predicted years cleared, {FailedStepCount} steps stepped over",
+                nameof(RunYearBuiltPredictionsAsync), cancelled ? " after being cancelled" : string.Empty, imageCount, detectionCount, buildingCount, featureRowCount, predictionCount, yearBuiltDataUpdatedCount, buildingDataUpdatedCount, predictedYearClearedCount, failedStepNames.Count);
 
             return Result();
         }
